@@ -22,6 +22,8 @@ CREATE TABLE restaurants (
   delivers boolean DEFAULT false,
   opening_hours jsonb,
   payment_methods text[],
+  latitude numeric(10, 8),
+  longitude numeric(11, 8),
   created_at timestamptz DEFAULT now()
 );
 
@@ -55,99 +57,124 @@ CREATE TABLE item_variants (
   available boolean DEFAULT true
 );
 
--- Insert example restaurants
-INSERT INTO restaurants (id, name, address, email, phone, description, image_url, cuisine_type, delivers, opening_hours, payment_methods) VALUES
-  (1, 'Golden Dragon', 'Hauptstraße 42, 10115 Berlin', 'info@goldendragon.de', '+49 30 12345678', 
+-- Insert example restaurants in Büren, Geseke, Brilon, and Salzkotten
+INSERT INTO restaurants (id, name, address, email, phone, description, image_url, cuisine_type, delivers, opening_hours, payment_methods, latitude, longitude) VALUES
+  (1, 'Golden Dragon', 'Königstraße 12, 33142 Büren, Germany', 'info@goldendragon.de', '+49 2951 123456', 
    'Authentic Chinese cuisine with traditional flavors',
    'https://images.unsplash.com/photo-1525755662778-989d0524087e?w=800',
    'Chinese',
    true,
    '{"monday": "11:00-22:00", "tuesday": "11:00-22:00", "wednesday": "11:00-22:00", "thursday": "11:00-22:00", "friday": "11:00-23:00", "saturday": "12:00-23:00", "sunday": "12:00-22:00"}'::jsonb,
-   ARRAY['Cash', 'Credit Card', 'Debit Card', 'PayPal']),
-  (2, 'La Bella Vita', 'Italienische Straße 15, 10115 Berlin', 'contact@labellavita.de', '+49 30 87654321', 
+   ARRAY['Cash', 'Credit Card', 'Debit Card', 'PayPal'],
+   51.551667, 8.559722),
+  
+  (2, 'La Bella Vita', 'Bachstraße 8, 59590 Geseke, Germany', 'contact@labellavita.de', '+49 2942 234567', 
    'Traditional Italian restaurant serving homemade pasta and pizza',
    'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800',
    'Italian',
    true,
    '{"monday": "12:00-23:00", "tuesday": "12:00-23:00", "wednesday": "12:00-23:00", "thursday": "12:00-23:00", "friday": "12:00-00:00", "saturday": "12:00-00:00", "sunday": "Closed"}'::jsonb,
-   ARRAY['Cash', 'Credit Card', 'Debit Card', 'Apple Pay', 'Google Pay']),
-  (3, 'Taverna Olympia', 'Griechischer Platz 8, 10115 Berlin', 'hello@tavernaolympia.de', '+49 30 55566677', 
+   ARRAY['Cash', 'Credit Card', 'Debit Card', 'Apple Pay', 'Google Pay'],
+   51.640556, 8.516389),
+  
+  (3, 'Taverna Olympia', 'Marktplatz 5, 59929 Brilon, Germany', 'hello@tavernaolympia.de', '+49 2961 345678', 
    'Greek taverna with Mediterranean specialties',
    'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800',
    'Greek',
    false,
    '{"monday": "17:00-23:00", "tuesday": "17:00-23:00", "wednesday": "Closed", "thursday": "17:00-23:00", "friday": "17:00-00:00", "saturday": "12:00-00:00", "sunday": "12:00-22:00"}'::jsonb,
-   ARRAY['Cash', 'Credit Card', 'EC Card']),
-  (4, 'Sushi Heaven', 'Friedrichstraße 120, 10117 Berlin', 'info@sushiheaven.de', '+49 30 22334455', 
+   ARRAY['Cash', 'Credit Card', 'EC Card'],
+   51.393889, 8.570278),
+  
+  (4, 'Sushi Heaven', 'Lange Straße 34, 33154 Salzkotten, Germany', 'info@sushiheaven.de', '+49 5258 456789', 
    'Premium Japanese sushi bar with fresh daily selections',
    'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800',
    'Japanese',
    true,
    '{"monday": "11:30-22:00", "tuesday": "11:30-22:00", "wednesday": "11:30-22:00", "thursday": "11:30-22:00", "friday": "11:30-23:00", "saturday": "12:00-23:00", "sunday": "12:00-21:00"}'::jsonb,
-   ARRAY['Cash', 'Credit Card', 'Debit Card', 'Apple Pay']),
-  (5, 'Curry Palace', 'Kantstraße 88, 10627 Berlin', 'info@currypalace.de', '+49 30 33445566', 
+   ARRAY['Cash', 'Credit Card', 'Debit Card', 'Apple Pay'],
+   51.672222, 8.605833),
+  
+  (5, 'Curry Palace', 'Hauptstraße 45, 33142 Büren, Germany', 'info@currypalace.de', '+49 2951 567890', 
    'Authentic Indian cuisine with traditional tandoori specialties',
    'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800',
    'Indian',
    true,
    '{"monday": "12:00-23:00", "tuesday": "12:00-23:00", "wednesday": "12:00-23:00", "thursday": "12:00-23:00", "friday": "12:00-00:00", "saturday": "13:00-00:00", "sunday": "13:00-23:00"}'::jsonb,
-   ARRAY['Cash', 'Credit Card', 'PayPal', 'Google Pay']),
-  (6, 'Le Bistro Parisien', 'Kurfürstendamm 45, 10719 Berlin', 'contact@lebistro.de', '+49 30 44556677', 
+   ARRAY['Cash', 'Credit Card', 'PayPal', 'Google Pay'],
+   51.548889, 8.563611),
+  
+  (6, 'Le Bistro Parisien', 'Bürener Straße 22, 59590 Geseke, Germany', 'contact@lebistro.de', '+49 2942 678901', 
    'Classic French bistro with elegant dining experience',
    'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=800',
    'French',
    false,
    '{"monday": "Closed", "tuesday": "18:00-23:00", "wednesday": "18:00-23:00", "thursday": "18:00-23:00", "friday": "18:00-00:00", "saturday": "18:00-00:00", "sunday": "12:00-22:00"}'::jsonb,
-   ARRAY['Cash', 'Credit Card', 'Debit Card']),
-  (7, 'Taco Fiesta', 'Warschauer Straße 34, 10243 Berlin', 'hola@tacofiesta.de', '+49 30 55667788', 
+   ARRAY['Cash', 'Credit Card', 'Debit Card'],
+   51.638333, 8.520556),
+  
+  (7, 'Taco Fiesta', 'Steinweg 18, 59929 Brilon, Germany', 'hola@tacofiesta.de', '+49 2961 789012', 
    'Vibrant Mexican restaurant with authentic street food',
    'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=800',
    'Mexican',
    true,
    '{"monday": "11:00-22:00", "tuesday": "11:00-22:00", "wednesday": "11:00-22:00", "thursday": "11:00-22:00", "friday": "11:00-23:00", "saturday": "12:00-23:00", "sunday": "12:00-22:00"}'::jsonb,
-   ARRAY['Cash', 'Credit Card', 'Apple Pay', 'Google Pay']),
-  (8, 'Saigon Street Kitchen', 'Rosenthaler Straße 56, 10178 Berlin', 'info@saigonstreet.de', '+49 30 66778899', 
+   ARRAY['Cash', 'Credit Card', 'Apple Pay', 'Google Pay'],
+   51.396111, 8.567222),
+  
+  (8, 'Saigon Street Kitchen', 'Vielser Straße 15, 33154 Salzkotten, Germany', 'info@saigonstreet.de', '+49 5258 890123', 
    'Vietnamese street food with modern twist',
    'https://images.unsplash.com/photo-1559314809-0d155014e29e?w=800',
    'Vietnamese',
    true,
    '{"monday": "11:00-22:00", "tuesday": "11:00-22:00", "wednesday": "11:00-22:00", "thursday": "11:00-22:00", "friday": "11:00-23:00", "saturday": "12:00-23:00", "sunday": "12:00-22:00"}'::jsonb,
-   ARRAY['Cash', 'Credit Card', 'Debit Card', 'PayPal']),
-  (9, 'The American Diner', 'Alexanderplatz 3, 10178 Berlin', 'info@americandiner.de', '+49 30 77889900', 
+   ARRAY['Cash', 'Credit Card', 'Debit Card', 'PayPal'],
+   51.669444, 8.611667),
+  
+  (9, 'The American Diner', 'Bahnhofstraße 28, 33142 Büren, Germany', 'info@americandiner.de', '+49 2951 901234', 
    'Classic American diner serving burgers, shakes, and comfort food',
    'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800',
    'American',
    true,
    '{"monday": "10:00-23:00", "tuesday": "10:00-23:00", "wednesday": "10:00-23:00", "thursday": "10:00-23:00", "friday": "10:00-00:00", "saturday": "10:00-00:00", "sunday": "10:00-23:00"}'::jsonb,
-   ARRAY['Cash', 'Credit Card', 'Debit Card', 'Apple Pay', 'Google Pay']),
-  (10, 'Istanbul Grill', 'Sonnenallee 112, 12045 Berlin', 'info@istanbulgrill.de', '+49 30 88990011', 
+   ARRAY['Cash', 'Credit Card', 'Debit Card', 'Apple Pay', 'Google Pay'],
+   51.545278, 8.565000),
+  
+  (10, 'Istanbul Grill', 'Erwitter Straße 42, 59590 Geseke, Germany', 'info@istanbulgrill.de', '+49 2942 012345', 
    'Traditional Turkish grill house with fresh kebabs',
    'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=800',
    'Turkish',
    true,
    '{"monday": "10:00-23:00", "tuesday": "10:00-23:00", "wednesday": "10:00-23:00", "thursday": "10:00-23:00", "friday": "10:00-01:00", "saturday": "10:00-01:00", "sunday": "11:00-23:00"}'::jsonb,
-   ARRAY['Cash', 'Credit Card', 'EC Card']),
-  (11, 'Thai Orchid', 'Schönhauser Allee 78, 10439 Berlin', 'hello@thaiorchid.de', '+49 30 99001122', 
+   ARRAY['Cash', 'Credit Card', 'EC Card'],
+   51.635556, 8.523333),
+  
+  (11, 'Thai Orchid', 'Derkere Straße 12, 59929 Brilon, Germany', 'hello@thaiorchid.de', '+49 2961 123450', 
    'Authentic Thai restaurant with aromatic curries and pad thai',
    'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=800',
    'Thai',
    true,
    '{"monday": "12:00-22:00", "tuesday": "12:00-22:00", "wednesday": "12:00-22:00", "thursday": "12:00-22:00", "friday": "12:00-23:00", "saturday": "12:00-23:00", "sunday": "13:00-22:00"}'::jsonb,
-   ARRAY['Cash', 'Credit Card', 'PayPal']),
-  (12, 'Seoul BBQ', 'Kantstraße 25, 10623 Berlin', 'info@seoulbbq.de', '+49 30 11223344', 
+   ARRAY['Cash', 'Credit Card', 'PayPal'],
+   51.390000, 8.573889),
+  
+  (12, 'Seoul BBQ', 'Upsprunger Straße 8, 33154 Salzkotten, Germany', 'info@seoulbbq.de', '+49 5258 234561', 
    'Korean BBQ restaurant with table grills and banchan',
    'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=800',
    'Korean',
    false,
    '{"monday": "Closed", "tuesday": "17:00-23:00", "wednesday": "17:00-23:00", "thursday": "17:00-23:00", "friday": "17:00-00:00", "saturday": "12:00-00:00", "sunday": "12:00-23:00"}'::jsonb,
-   ARRAY['Cash', 'Credit Card', 'Debit Card', 'Apple Pay']),
-  (13, 'Tapas y Vino', 'Bergmannstraße 99, 10961 Berlin', 'hola@tapasyvino.de', '+49 30 22334455', 
+   ARRAY['Cash', 'Credit Card', 'Debit Card', 'Apple Pay'],
+   51.665833, 8.608611),
+  
+  (13, 'Tapas y Vino', 'Alme 7, 33142 Büren, Germany', 'hola@tapasyvino.de', '+49 2951 345672', 
    'Spanish tapas bar with extensive wine selection',
    'https://images.unsplash.com/photo-1534080564583-6be75777b70a?w=800',
    'Spanish',
    false,
    '{"monday": "Closed", "tuesday": "17:00-00:00", "wednesday": "17:00-00:00", "thursday": "17:00-00:00", "friday": "17:00-01:00", "saturday": "12:00-01:00", "sunday": "12:00-23:00"}'::jsonb,
-   ARRAY['Cash', 'Credit Card', 'Apple Pay'])
+   ARRAY['Cash', 'Credit Card', 'Apple Pay'],
+   51.553056, 8.556944)
 ON CONFLICT (id) DO NOTHING;
 
 -- Categories for Golden Dragon (Chinese)
@@ -298,7 +325,6 @@ INSERT INTO items (id, category_id, name, price, description, has_variants) VALU
   (106, 6, 'Diavola', NULL, 'Spicy salami, tomato sauce, and mozzarella', true),
   -- Pasta
   (107, 7, 'Spaghetti Carbonara', 9.50, 'Creamy sauce with pancetta and egg yolk', false),
-  (108, 7, 'Penne Arrabiata', 8.90, 'Spicy tomato sauce with garlic and chili', false),
   (108, 7, 'Penne Arrabiata', 8.90, 'Spicy tomato sauce with garlic and chili', false),
   (109, 7, 'Lasagna al Forno', 11.50, 'Homemade lasagna with meat sauce and béchamel', false),
   -- Desserts
@@ -590,7 +616,5 @@ SELECT setval(pg_get_serial_sequence('restaurants','id'), COALESCE((SELECT MAX(i
 SELECT setval(pg_get_serial_sequence('categories','id'), COALESCE((SELECT MAX(id) FROM categories), 1));
 SELECT setval(pg_get_serial_sequence('items','id'), COALESCE((SELECT MAX(id) FROM items), 1));
 SELECT setval(pg_get_serial_sequence('item_variants','id'), COALESCE((SELECT MAX(id) FROM item_variants), 1));
-SELECT setval(pg_get_serial_sequence('categories','id'), COALESCE((SELECT MAX(id) FROM categories), 1));
-SELECT setval(pg_get_serial_sequence('items','id'), COALESCE((SELECT MAX(id) FROM items), 1));
 
 COMMIT;

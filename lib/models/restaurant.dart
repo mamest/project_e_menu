@@ -1,3 +1,5 @@
+import 'dart:math';
+
 class Restaurant {
   final int id;
   final String name;
@@ -10,6 +12,8 @@ class Restaurant {
   final bool delivers;
   final Map<String, dynamic>? openingHours;
   final List<String>? paymentMethods;
+  final double? latitude;
+  final double? longitude;
 
   Restaurant({
     required this.id,
@@ -23,6 +27,8 @@ class Restaurant {
     this.delivers = false,
     this.openingHours,
     this.paymentMethods,
+    this.latitude,
+    this.longitude,
   });
 
   factory Restaurant.fromJson(Map<String, dynamic> json) {
@@ -39,6 +45,12 @@ class Restaurant {
       openingHours: json['opening_hours'] as Map<String, dynamic>?,
       paymentMethods: json['payment_methods'] != null
           ? List<String>.from(json['payment_methods'] as List)
+          : null,
+      latitude: json['latitude'] != null
+          ? (json['latitude'] as num).toDouble()
+          : null,
+      longitude: json['longitude'] != null
+          ? (json['longitude'] as num).toDouble()
           : null,
     );
   }
@@ -60,5 +72,34 @@ class Restaurant {
 
     final hours = openingHours![dayName];
     return hours is String ? hours : null;
+  }
+
+  // Calculate distance in kilometers using Haversine formula
+  double? distanceFrom(double? userLat, double? userLon) {
+    if (latitude == null ||
+        longitude == null ||
+        userLat == null ||
+        userLon == null) {
+      return null;
+    }
+
+    const double earthRadius = 6371; // Earth's radius in kilometers
+
+    final dLat = _toRadians(userLat - latitude!);
+    final dLon = _toRadians(userLon - longitude!);
+
+    final a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(_toRadians(latitude!)) *
+            cos(_toRadians(userLat)) *
+            sin(dLon / 2) *
+            sin(dLon / 2);
+
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+
+    return earthRadius * c;
+  }
+
+  double _toRadians(double degrees) {
+    return degrees * (3.14159265359 / 180);
   }
 }
