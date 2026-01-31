@@ -1,7 +1,5 @@
-2026/01/31-20:32:44.326 1790 Reusing MANIFEST C:\Users\Marvin\AppData\Local\Temp\flutter_tools.2c10f680\flutter_tools_chrome_device.b95fa16c\Default\shared_proto_db/MANIFEST-000001
-2026/01/31-20:32:44.326 1790 Recovering log #4
-2026/01/31-20:32:44.327 1790 Reusing old log C:\Users\Marvin\AppData\Local\Temp\flutter_tools.2c10f680\flutter_tools_chrome_device.b95fa16c\Default\shared_proto_db/000004.log 
-2026/01/31-20:32:44.327 1790 Delete type=0 #3
-2026/01/31-20:32:58.182 60a8 Level-0 table #8: started
-2026/01/31-20:32:58.187 60a8 Level-0 table #8: 135379 bytes OK
-2026/01/31-20:32:58.193 60a8 Delete type=0 #4
+2026/01/31-20:37:16.040 517c Reusing MANIFEST C:\Users\Marvin\AppData\Local\Temp\flutter_tools.a29f6869\flutter_tools_chrome_device.e9bb3883\Default\shared_proto_db/MANIFEST-000001
+2026/01/31-20:37:16.041 517c Recovering log #7
+2026/01/31-20:37:16.041 517c Reusing old log C:\Users\Marvin\AppData\Local\Temp\flutter_tools.a29f6869\flutter_tools_chrome_device.e9bb3883\Default\shared_proto_db/000007.log 
+2026/01/31-20:37:16.041 517c Delete type=0 #3
+2026/01/31-20:37:16.041 517c Delete type=0 #4
