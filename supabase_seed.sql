@@ -1,39 +1,595 @@
--- Supabase seed for categories and items
--- Run this in the Supabase SQL editor (or via psql) to create tables and insert example rows.
+-- Supabase seed for digital restaurant menu
+-- Run this in the Supabase SQL editor (or via psql) to create tables and insert example restaurants.
 
 BEGIN;
 
-CREATE TABLE IF NOT EXISTS categories (
+-- Drop existing tables if they exist (clean slate)
+DROP TABLE IF EXISTS item_variants CASCADE;
+DROP TABLE IF EXISTS items CASCADE;
+DROP TABLE IF EXISTS categories CASCADE;
+DROP TABLE IF EXISTS restaurants CASCADE;
+
+-- Restaurants table
+CREATE TABLE restaurants (
   id bigserial PRIMARY KEY,
-  name text NOT NULL
+  name text NOT NULL,
+  address text NOT NULL,
+  email text,
+  phone text,
+  description text,
+  image_url text,
+  cuisine_type text,
+  delivers boolean DEFAULT false,
+  opening_hours jsonb,
+  payment_methods text[],
+  created_at timestamptz DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS items (
+-- Categories table (each restaurant has its own categories)
+CREATE TABLE categories (
   id bigserial PRIMARY KEY,
-  category_id bigint REFERENCES categories(id) ON DELETE CASCADE,
+  restaurant_id bigint NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  display_order int DEFAULT 0
+);
+
+-- Items table (menu items belong to categories)
+CREATE TABLE items (
+  id bigserial PRIMARY KEY,
+  category_id bigint NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  price numeric(8,2),
+  description text,
+  image_url text,
+  available boolean DEFAULT true,
+  has_variants boolean DEFAULT false
+);
+
+-- Item variants table (for sizes, options, etc.)
+CREATE TABLE item_variants (
+  id bigserial PRIMARY KEY,
+  item_id bigint NOT NULL REFERENCES items(id) ON DELETE CASCADE,
   name text NOT NULL,
   price numeric(8,2) NOT NULL,
-  description text
+  display_order int DEFAULT 0,
+  available boolean DEFAULT true
 );
 
--- Example categories
-INSERT INTO categories (id, name) VALUES
-  (1, 'Starters'),
-  (2, 'Mains'),
-  (3, 'Drinks')
+-- Insert example restaurants
+INSERT INTO restaurants (id, name, address, email, phone, description, image_url, cuisine_type, delivers, opening_hours, payment_methods) VALUES
+  (1, 'Golden Dragon', 'Hauptstraße 42, 10115 Berlin', 'info@goldendragon.de', '+49 30 12345678', 
+   'Authentic Chinese cuisine with traditional flavors',
+   'https://images.unsplash.com/photo-1525755662778-989d0524087e?w=800',
+   'Chinese',
+   true,
+   '{"monday": "11:00-22:00", "tuesday": "11:00-22:00", "wednesday": "11:00-22:00", "thursday": "11:00-22:00", "friday": "11:00-23:00", "saturday": "12:00-23:00", "sunday": "12:00-22:00"}'::jsonb,
+   ARRAY['Cash', 'Credit Card', 'Debit Card', 'PayPal']),
+  (2, 'La Bella Vita', 'Italienische Straße 15, 10115 Berlin', 'contact@labellavita.de', '+49 30 87654321', 
+   'Traditional Italian restaurant serving homemade pasta and pizza',
+   'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800',
+   'Italian',
+   true,
+   '{"monday": "12:00-23:00", "tuesday": "12:00-23:00", "wednesday": "12:00-23:00", "thursday": "12:00-23:00", "friday": "12:00-00:00", "saturday": "12:00-00:00", "sunday": "Closed"}'::jsonb,
+   ARRAY['Cash', 'Credit Card', 'Debit Card', 'Apple Pay', 'Google Pay']),
+  (3, 'Taverna Olympia', 'Griechischer Platz 8, 10115 Berlin', 'hello@tavernaolympia.de', '+49 30 55566677', 
+   'Greek taverna with Mediterranean specialties',
+   'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800',
+   'Greek',
+   false,
+   '{"monday": "17:00-23:00", "tuesday": "17:00-23:00", "wednesday": "Closed", "thursday": "17:00-23:00", "friday": "17:00-00:00", "saturday": "12:00-00:00", "sunday": "12:00-22:00"}'::jsonb,
+   ARRAY['Cash', 'Credit Card', 'EC Card']),
+  (4, 'Sushi Heaven', 'Friedrichstraße 120, 10117 Berlin', 'info@sushiheaven.de', '+49 30 22334455', 
+   'Premium Japanese sushi bar with fresh daily selections',
+   'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800',
+   'Japanese',
+   true,
+   '{"monday": "11:30-22:00", "tuesday": "11:30-22:00", "wednesday": "11:30-22:00", "thursday": "11:30-22:00", "friday": "11:30-23:00", "saturday": "12:00-23:00", "sunday": "12:00-21:00"}'::jsonb,
+   ARRAY['Cash', 'Credit Card', 'Debit Card', 'Apple Pay']),
+  (5, 'Curry Palace', 'Kantstraße 88, 10627 Berlin', 'info@currypalace.de', '+49 30 33445566', 
+   'Authentic Indian cuisine with traditional tandoori specialties',
+   'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800',
+   'Indian',
+   true,
+   '{"monday": "12:00-23:00", "tuesday": "12:00-23:00", "wednesday": "12:00-23:00", "thursday": "12:00-23:00", "friday": "12:00-00:00", "saturday": "13:00-00:00", "sunday": "13:00-23:00"}'::jsonb,
+   ARRAY['Cash', 'Credit Card', 'PayPal', 'Google Pay']),
+  (6, 'Le Bistro Parisien', 'Kurfürstendamm 45, 10719 Berlin', 'contact@lebistro.de', '+49 30 44556677', 
+   'Classic French bistro with elegant dining experience',
+   'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=800',
+   'French',
+   false,
+   '{"monday": "Closed", "tuesday": "18:00-23:00", "wednesday": "18:00-23:00", "thursday": "18:00-23:00", "friday": "18:00-00:00", "saturday": "18:00-00:00", "sunday": "12:00-22:00"}'::jsonb,
+   ARRAY['Cash', 'Credit Card', 'Debit Card']),
+  (7, 'Taco Fiesta', 'Warschauer Straße 34, 10243 Berlin', 'hola@tacofiesta.de', '+49 30 55667788', 
+   'Vibrant Mexican restaurant with authentic street food',
+   'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=800',
+   'Mexican',
+   true,
+   '{"monday": "11:00-22:00", "tuesday": "11:00-22:00", "wednesday": "11:00-22:00", "thursday": "11:00-22:00", "friday": "11:00-23:00", "saturday": "12:00-23:00", "sunday": "12:00-22:00"}'::jsonb,
+   ARRAY['Cash', 'Credit Card', 'Apple Pay', 'Google Pay']),
+  (8, 'Saigon Street Kitchen', 'Rosenthaler Straße 56, 10178 Berlin', 'info@saigonstreet.de', '+49 30 66778899', 
+   'Vietnamese street food with modern twist',
+   'https://images.unsplash.com/photo-1559314809-0d155014e29e?w=800',
+   'Vietnamese',
+   true,
+   '{"monday": "11:00-22:00", "tuesday": "11:00-22:00", "wednesday": "11:00-22:00", "thursday": "11:00-22:00", "friday": "11:00-23:00", "saturday": "12:00-23:00", "sunday": "12:00-22:00"}'::jsonb,
+   ARRAY['Cash', 'Credit Card', 'Debit Card', 'PayPal']),
+  (9, 'The American Diner', 'Alexanderplatz 3, 10178 Berlin', 'info@americandiner.de', '+49 30 77889900', 
+   'Classic American diner serving burgers, shakes, and comfort food',
+   'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800',
+   'American',
+   true,
+   '{"monday": "10:00-23:00", "tuesday": "10:00-23:00", "wednesday": "10:00-23:00", "thursday": "10:00-23:00", "friday": "10:00-00:00", "saturday": "10:00-00:00", "sunday": "10:00-23:00"}'::jsonb,
+   ARRAY['Cash', 'Credit Card', 'Debit Card', 'Apple Pay', 'Google Pay']),
+  (10, 'Istanbul Grill', 'Sonnenallee 112, 12045 Berlin', 'info@istanbulgrill.de', '+49 30 88990011', 
+   'Traditional Turkish grill house with fresh kebabs',
+   'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=800',
+   'Turkish',
+   true,
+   '{"monday": "10:00-23:00", "tuesday": "10:00-23:00", "wednesday": "10:00-23:00", "thursday": "10:00-23:00", "friday": "10:00-01:00", "saturday": "10:00-01:00", "sunday": "11:00-23:00"}'::jsonb,
+   ARRAY['Cash', 'Credit Card', 'EC Card']),
+  (11, 'Thai Orchid', 'Schönhauser Allee 78, 10439 Berlin', 'hello@thaiorchid.de', '+49 30 99001122', 
+   'Authentic Thai restaurant with aromatic curries and pad thai',
+   'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=800',
+   'Thai',
+   true,
+   '{"monday": "12:00-22:00", "tuesday": "12:00-22:00", "wednesday": "12:00-22:00", "thursday": "12:00-22:00", "friday": "12:00-23:00", "saturday": "12:00-23:00", "sunday": "13:00-22:00"}'::jsonb,
+   ARRAY['Cash', 'Credit Card', 'PayPal']),
+  (12, 'Seoul BBQ', 'Kantstraße 25, 10623 Berlin', 'info@seoulbbq.de', '+49 30 11223344', 
+   'Korean BBQ restaurant with table grills and banchan',
+   'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=800',
+   'Korean',
+   false,
+   '{"monday": "Closed", "tuesday": "17:00-23:00", "wednesday": "17:00-23:00", "thursday": "17:00-23:00", "friday": "17:00-00:00", "saturday": "12:00-00:00", "sunday": "12:00-23:00"}'::jsonb,
+   ARRAY['Cash', 'Credit Card', 'Debit Card', 'Apple Pay']),
+  (13, 'Tapas y Vino', 'Bergmannstraße 99, 10961 Berlin', 'hola@tapasyvino.de', '+49 30 22334455', 
+   'Spanish tapas bar with extensive wine selection',
+   'https://images.unsplash.com/photo-1534080564583-6be75777b70a?w=800',
+   'Spanish',
+   false,
+   '{"monday": "Closed", "tuesday": "17:00-00:00", "wednesday": "17:00-00:00", "thursday": "17:00-00:00", "friday": "17:00-01:00", "saturday": "12:00-01:00", "sunday": "12:00-23:00"}'::jsonb,
+   ARRAY['Cash', 'Credit Card', 'Apple Pay'])
 ON CONFLICT (id) DO NOTHING;
 
--- Example items
-INSERT INTO items (category_id, name, price, description) VALUES
-  (1, 'Bruschetta', 4.50, 'Toasted bread with tomatoes.'),
-  (1, 'Soup of the day', 3.90, 'Ask staff for today''s soup.'),
-  (2, 'Margherita Pizza', 8.50, 'Classic tomato & mozzarella.'),
-  (2, 'Pasta Carbonara', 9.50, 'Creamy pancetta pasta.'),
-  (3, 'Mineral Water', 1.50, 'Still or sparkling.'),
-  (3, 'Soda', 2.00, 'Coke, Fanta, Sprite.')
+-- Categories for Golden Dragon (Chinese)
+INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
+  (1, 1, 'Appetizers', 1),
+  (2, 1, 'Soups', 2),
+  (3, 1, 'Main Dishes', 3),
+  (4, 1, 'Beverages', 4)
+ON CONFLICT (id) DO NOTHING;
+
+-- Categories for La Bella Vita (Italian)
+INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
+  (5, 2, 'Antipasti', 1),
+  (6, 2, 'Pizza', 2),
+  (7, 2, 'Pasta', 3),
+  (8, 2, 'Desserts', 4),
+  (9, 2, 'Drinks', 5)
+ON CONFLICT (id) DO NOTHING;
+
+-- Categories for Taverna Olympia (Greek)
+INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
+  (10, 3, 'Mezze', 1),
+  (11, 3, 'Grilled Specialties', 2),
+  (12, 3, 'Traditional Dishes', 3),
+  (13, 3, 'Beverages', 4)
+ON CONFLICT (id) DO NOTHING;
+
+-- Categories for Sushi Heaven (Japanese)
+INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
+  (14, 4, 'Nigiri', 1),
+  (15, 4, 'Maki Rolls', 2),
+  (16, 4, 'Special Rolls', 3),
+  (17, 4, 'Sashimi', 4),
+  (18, 4, 'Drinks', 5)
+ON CONFLICT (id) DO NOTHING;
+
+-- Categories for Curry Palace (Indian)
+INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
+  (19, 5, 'Starters', 1),
+  (20, 5, 'Tandoori', 2),
+  (21, 5, 'Curries', 3),
+  (22, 5, 'Biryani & Rice', 4),
+  (23, 5, 'Breads', 5),
+  (24, 5, 'Beverages', 6)
+ON CONFLICT (id) DO NOTHING;
+
+-- Categories for Le Bistro Parisien (French)
+INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
+  (25, 6, 'Entrées', 1),
+  (26, 6, 'Plats Principaux', 2),
+  (27, 6, 'Fromages', 3),
+  (28, 6, 'Desserts', 4),
+  (29, 6, 'Vins', 5)
+ON CONFLICT (id) DO NOTHING;
+
+-- Categories for Taco Fiesta (Mexican)
+INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
+  (30, 7, 'Antojitos', 1),
+  (31, 7, 'Tacos', 2),
+  (32, 7, 'Burritos & Quesadillas', 3),
+  (33, 7, 'Mains', 4),
+  (34, 7, 'Drinks', 5)
+ON CONFLICT (id) DO NOTHING;
+
+-- Categories for Saigon Street Kitchen (Vietnamese)
+INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
+  (35, 8, 'Appetizers', 1),
+  (36, 8, 'Pho', 2),
+  (37, 8, 'Banh Mi', 3),
+  (38, 8, 'Rice & Noodles', 4),
+  (39, 8, 'Beverages', 5)
+ON CONFLICT (id) DO NOTHING;
+
+-- Categories for The American Diner (American)
+INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
+  (40, 9, 'Appetizers', 1),
+  (41, 9, 'Burgers', 2),
+  (42, 9, 'Mains', 3),
+  (43, 9, 'Desserts', 4),
+  (44, 9, 'Shakes & Drinks', 5)
+ON CONFLICT (id) DO NOTHING;
+
+-- Categories for Istanbul Grill (Turkish)
+INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
+  (45, 10, 'Mezze', 1),
+  (46, 10, 'Kebabs', 2),
+  (47, 10, 'Pide & Lahmacun', 3),
+  (48, 10, 'Mains', 4),
+  (49, 10, 'Beverages', 5)
+ON CONFLICT (id) DO NOTHING;
+
+-- Categories for Thai Orchid (Thai)
+INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
+  (50, 11, 'Appetizers', 1),
+  (51, 11, 'Soups', 2),
+  (52, 11, 'Curries', 3),
+  (53, 11, 'Stir-Fry', 4),
+  (54, 11, 'Noodles & Rice', 5),
+  (55, 11, 'Beverages', 6)
+ON CONFLICT (id) DO NOTHING;
+
+-- Categories for Seoul BBQ (Korean)
+INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
+  (56, 12, 'Appetizers', 1),
+  (57, 12, 'BBQ Meats', 2),
+  (58, 12, 'Hot Pots', 3),
+  (59, 12, 'Main Dishes', 4),
+  (60, 12, 'Beverages', 5)
+ON CONFLICT (id) DO NOTHING;
+
+-- Categories for Tapas y Vino (Spanish)
+INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
+  (61, 13, 'Tapas Frías', 1),
+  (62, 13, 'Tapas Calientes', 2),
+  (63, 13, 'Raciones', 3),
+  (64, 13, 'Postres', 4),
+  (65, 13, 'Bebidas', 5)
+ON CONFLICT (id) DO NOTHING;
+
+-- Items for Golden Dragon (Chinese)
+INSERT INTO items (category_id, name, price, description, has_variants) VALUES
+  -- Appetizers
+  (1, 'Spring Rolls', 4.50, 'Crispy vegetable spring rolls with sweet chili sauce', false),
+  (1, 'Dumplings', 5.90, 'Steamed pork dumplings (6 pieces)', false),
+  (1, 'Sesame Prawn Toast', 6.50, 'Crispy prawn toast with sesame seeds', false),
+  -- Soups
+  (2, 'Hot & Sour Soup', 4.20, 'Spicy and tangy soup with tofu and mushrooms', false),
+  (2, 'Wonton Soup', 4.80, 'Clear broth with handmade wontons', false),
+  -- Main Dishes
+  (3, 'Kung Pao Chicken', 11.90, 'Spicy chicken with peanuts and vegetables', false),
+  (3, 'Sweet & Sour Pork', 10.50, 'Crispy pork in sweet and sour sauce', false),
+  (3, 'Beef with Broccoli', 12.50, 'Tender beef stir-fried with fresh broccoli', false),
+  (3, 'Fried Rice with Vegetables', 8.90, 'Classic fried rice with mixed vegetables', false),
+  -- Beverages
+  (4, 'Jasmine Tea', 2.50, 'Traditional Chinese jasmine tea', false),
+  (4, 'Tsingtao Beer', 3.80, 'Chinese lager beer (330ml)', false)
+ON CONFLICT DO NOTHING;
+
+-- Items for La Bella Vita (Italian)
+INSERT INTO items (id, category_id, name, price, description, has_variants) VALUES
+  -- Antipasti
+  (101, 5, 'Bruschetta', 5.50, 'Toasted bread with fresh tomatoes, garlic, and basil', false),
+  (102, 5, 'Caprese Salad', 7.90, 'Buffalo mozzarella, tomatoes, and fresh basil', false),
+  (103, 5, 'Antipasto Misto', 9.50, 'Mixed Italian cold cuts and cheeses', false),
+  -- Pizza (with size variants)
+  (104, 6, 'Margherita', NULL, 'Tomato sauce, mozzarella, and fresh basil', true),
+  (105, 6, 'Quattro Formaggi', NULL, 'Four cheese pizza with gorgonzola, mozzarella, parmesan, and fontina', true),
+  (106, 6, 'Diavola', NULL, 'Spicy salami, tomato sauce, and mozzarella', true),
+  -- Pasta
+  (107, 7, 'Spaghetti Carbonara', 9.50, 'Creamy sauce with pancetta and egg yolk', false),
+  (108, 7, 'Penne Arrabiata', 8.90, 'Spicy tomato sauce with garlic and chili', false),
+  (108, 7, 'Penne Arrabiata', 8.90, 'Spicy tomato sauce with garlic and chili', false),
+  (109, 7, 'Lasagna al Forno', 11.50, 'Homemade lasagna with meat sauce and béchamel', false),
+  -- Desserts
+  (110, 8, 'Tiramisu', 5.90, 'Classic Italian dessert with mascarpone and coffee', false),
+  (111, 8, 'Panna Cotta', 5.50, 'Vanilla cream with berry sauce', false),
+  -- Drinks
+  (112, 9, 'Espresso', 2.20, 'Italian espresso coffee', false),
+  (113, 9, 'House Wine (glass)', 4.50, 'Red or white wine', false)
+ON CONFLICT (id) DO NOTHING;
+
+-- Pizza size variants for La Bella Vita
+INSERT INTO item_variants (item_id, name, price, display_order) VALUES
+  -- Margherita sizes
+  (104, '20cm', 7.50, 1),
+  (104, '28cm', 9.50, 2),
+  (104, '32cm', 12.50, 3),
+  -- Quattro Formaggi sizes
+  (105, '20cm', 9.90, 1),
+  (105, '28cm', 12.90, 2),
+  (105, '32cm', 15.90, 3),
+  -- Diavola sizes
+  (106, '20cm', 8.90, 1),
+  (106, '28cm', 10.90, 2),
+  (106, '32cm', 13.90, 3)
+ON CONFLICT DO NOTHING;
+
+-- Items for Taverna Olympia (Greek)
+INSERT INTO items (category_id, name, price, description, has_variants) VALUES
+  -- Mezze
+  (10, 'Tzatziki', 4.50, 'Greek yogurt dip with cucumber and garlic', false),
+  (10, 'Taramosalata', 5.20, 'Fish roe dip with lemon and olive oil', false),
+  (10, 'Dolmades', 5.90, 'Stuffed grape leaves with rice and herbs', false),
+  (10, 'Greek Salad', 6.50, 'Tomatoes, cucumber, feta cheese, olives, and onions', false),
+  -- Grilled Specialties
+  (11, 'Souvlaki', 11.90, 'Grilled pork skewers with pita bread and tzatziki', false),
+  (11, 'Gyros Plate', 10.50, 'Traditional gyros with fries, salad, and tzatziki', false),
+  (11, 'Lamb Chops', 16.90, 'Grilled lamb chops with lemon potatoes', false),
+  -- Traditional Dishes
+  (12, 'Moussaka', 12.50, 'Baked eggplant with minced meat and béchamel sauce', false),
+  (12, 'Pastitsio', 11.90, 'Greek pasta bake with meat sauce and cheese', false),
+  (12, 'Spanakopita', 9.50, 'Spinach and feta cheese pie in phyllo pastry', false),
+  -- Beverages
+  (13, 'Greek Coffee', 2.80, 'Traditional Greek coffee', false),
+  (13, 'Ouzo', 3.50, 'Greek anise-flavored aperitif', false),
+  (13, 'Mythos Beer', 3.80, 'Greek lager beer (330ml)', false)
+ON CONFLICT DO NOTHING;
+
+-- Items for Sushi Heaven (Japanese)
+INSERT INTO items (category_id, name, price, description, has_variants) VALUES
+  -- Nigiri
+  (14, 'Salmon Nigiri', 4.50, 'Fresh salmon on seasoned rice (2 pieces)', false),
+  (14, 'Tuna Nigiri', 5.20, 'Premium tuna on seasoned rice (2 pieces)', false),
+  (14, 'Eel Nigiri', 5.50, 'Grilled eel with sweet sauce (2 pieces)', false),
+  -- Maki Rolls
+  (15, 'California Roll', 6.90, 'Crab, avocado, and cucumber', false),
+  (15, 'Spicy Tuna Roll', 7.50, 'Tuna with spicy mayo and sesame', false),
+  (15, 'Salmon Avocado Roll', 7.20, 'Fresh salmon and avocado', false),
+  -- Special Rolls
+  (16, 'Dragon Roll', 12.90, 'Eel, cucumber, topped with avocado', false),
+  (16, 'Rainbow Roll', 13.50, 'California roll topped with assorted fish', false),
+  -- Sashimi
+  (17, 'Salmon Sashimi', 11.50, 'Fresh salmon slices (8 pieces)', false),
+  (17, 'Mixed Sashimi', 15.90, 'Assorted fresh fish (12 pieces)', false),
+  -- Drinks
+  (18, 'Green Tea', 2.50, 'Hot Japanese green tea', false),
+  (18, 'Sake', 5.50, 'Japanese rice wine (100ml)', false)
+ON CONFLICT DO NOTHING;
+
+-- Items for Curry Palace (Indian)
+INSERT INTO items (category_id, name, price, description, has_variants) VALUES
+  -- Starters
+  (19, 'Samosas', 4.50, 'Crispy pastries filled with spiced potatoes (2 pieces)', false),
+  (19, 'Pakoras', 5.20, 'Mixed vegetable fritters', false),
+  (19, 'Chicken Tikka', 6.90, 'Marinated chicken pieces from tandoor', false),
+  -- Tandoori
+  (20, 'Tandoori Chicken', 11.90, 'Half chicken marinated in yogurt and spices', false),
+  (20, 'Lamb Seekh Kebab', 12.50, 'Minced lamb kebabs with Indian spices', false),
+  (20, 'Paneer Tikka', 10.50, 'Grilled cottage cheese with peppers', false),
+  -- Curries
+  (21, 'Butter Chicken', 12.90, 'Creamy tomato curry with tender chicken', false),
+  (21, 'Lamb Rogan Josh', 13.50, 'Aromatic lamb curry with Kashmiri spices', false),
+  (21, 'Palak Paneer', 10.90, 'Spinach curry with cottage cheese', false),
+  (21, 'Chicken Vindaloo', 12.50, 'Spicy and tangy Goan curry', false),
+  -- Biryani & Rice
+  (22, 'Chicken Biryani', 11.90, 'Fragrant rice with spiced chicken', false),
+  (22, 'Lamb Biryani', 13.50, 'Basmati rice with tender lamb', false),
+  (22, 'Vegetable Biryani', 9.90, 'Rice with mixed vegetables and spices', false),
+  -- Breads
+  (23, 'Naan', 2.50, 'Traditional Indian bread', false),
+  (23, 'Garlic Naan', 3.20, 'Naan with garlic and butter', false),
+  (23, 'Paratha', 3.50, 'Layered flatbread', false),
+  -- Beverages
+  (24, 'Mango Lassi', 3.80, 'Sweet yogurt drink with mango', false),
+  (24, 'Masala Chai', 2.50, 'Spiced Indian tea', false)
+ON CONFLICT DO NOTHING;
+
+-- Items for Le Bistro Parisien (French)
+INSERT INTO items (category_id, name, price, description, has_variants) VALUES
+  -- Entrées
+  (25, 'French Onion Soup', 7.50, 'Classic soup with caramelized onions and gruyère', false),
+  (25, 'Escargots de Bourgogne', 9.90, 'Burgundy snails with garlic butter (6 pieces)', false),
+  (25, 'Pâté de Campagne', 8.50, 'Country-style pâté with cornichons', false),
+  -- Plats Principaux
+  (26, 'Coq au Vin', 18.90, 'Chicken braised in red wine with mushrooms', false),
+  (26, 'Boeuf Bourguignon', 21.50, 'Beef stew with burgundy wine and vegetables', false),
+  (26, 'Sole Meunière', 19.90, 'Pan-fried sole with lemon butter sauce', false),
+  (26, 'Steak Frites', 22.50, 'Ribeye steak with french fries', false),
+  -- Fromages
+  (27, 'Cheese Plate', 12.50, 'Selection of French cheeses', false),
+  -- Desserts
+  (28, 'Crème Brûlée', 7.50, 'Vanilla custard with caramelized sugar', false),
+  (28, 'Tarte Tatin', 8.20, 'Upside-down caramelized apple tart', false),
+  (28, 'Mousse au Chocolat', 7.90, 'Rich chocolate mousse', false),
+  -- Vins
+  (29, 'Bordeaux (glass)', 6.50, 'Red wine from Bordeaux', false),
+  (29, 'Champagne (glass)', 9.90, 'French sparkling wine', false)
+ON CONFLICT DO NOTHING;
+
+-- Items for Taco Fiesta (Mexican)
+INSERT INTO items (category_id, name, price, description, has_variants) VALUES
+  -- Antojitos
+  (30, 'Nachos Supreme', 7.90, 'Tortilla chips with cheese, jalapeños, and salsa', false),
+  (30, 'Guacamole & Chips', 6.50, 'Fresh avocado dip with tortilla chips', false),
+  (30, 'Quesito Fundido', 5.90, 'Melted cheese with chorizo', false),
+  -- Tacos
+  (31, 'Carne Asada Taco', 3.90, 'Grilled beef with onions and cilantro', false),
+  (31, 'Al Pastor Taco', 3.70, 'Marinated pork with pineapple', false),
+  (31, 'Fish Taco', 4.20, 'Battered fish with cabbage slaw', false),
+  (31, 'Veggie Taco', 3.50, 'Grilled vegetables with black beans', false),
+  -- Burritos & Quesadillas
+  (32, 'Beef Burrito', 9.90, 'Large tortilla with beef, rice, beans, and cheese', false),
+  (32, 'Chicken Quesadilla', 8.50, 'Grilled tortilla with chicken and cheese', false),
+  (32, 'Veggie Burrito', 8.90, 'Rice, beans, vegetables, and guacamole', false),
+  -- Mains
+  (33, 'Enchiladas', 11.50, 'Rolled tortillas with chicken and cheese sauce', false),
+  (33, 'Fajitas', 13.90, 'Sizzling beef or chicken with peppers and onions', false),
+  -- Drinks
+  (34, 'Margarita', 7.50, 'Classic tequila cocktail', false),
+  (34, 'Cerveza', 3.80, 'Mexican beer', false)
+ON CONFLICT DO NOTHING;
+
+-- Items for Saigon Street Kitchen (Vietnamese)
+INSERT INTO items (category_id, name, price, description, has_variants) VALUES
+  -- Appetizers
+  (35, 'Summer Rolls', 5.50, 'Fresh rice paper rolls with shrimp and herbs (2 pieces)', false),
+  (35, 'Fried Spring Rolls', 4.90, 'Crispy rolls with pork and vegetables (3 pieces)', false),
+  (35, 'Vietnamese Dumplings', 5.20, 'Steamed dumplings with pork filling', false),
+  -- Pho
+  (36, 'Pho Bo', 9.50, 'Beef noodle soup with rice noodles', false),
+  (36, 'Pho Ga', 8.90, 'Chicken noodle soup with herbs', false),
+  (36, 'Pho Chay', 8.50, 'Vegetarian pho with tofu', false),
+  -- Banh Mi
+  (37, 'Banh Mi Thit', 6.50, 'Vietnamese sandwich with grilled pork', false),
+  (37, 'Banh Mi Ga', 6.20, 'Sandwich with lemongrass chicken', false),
+  (37, 'Banh Mi Chay', 5.90, 'Vegetarian sandwich with tofu', false),
+  -- Rice & Noodles
+  (38, 'Bun Cha', 10.90, 'Grilled pork with vermicelli and herbs', false),
+  (38, 'Com Tam', 9.50, 'Broken rice with grilled pork chop', false),
+  (38, 'Pad Thai', 9.90, 'Stir-fried rice noodles', false),
+  -- Beverages
+  (39, 'Vietnamese Coffee', 3.50, 'Strong coffee with condensed milk', false),
+  (39, 'Fresh Coconut', 3.80, 'Young coconut water', false)
+ON CONFLICT DO NOTHING;
+
+-- Items for The American Diner (American)
+INSERT INTO items (category_id, name, price, description, has_variants) VALUES
+  -- Appetizers
+  (40, 'Buffalo Wings', 7.90, 'Spicy chicken wings with blue cheese dip (8 pieces)', false),
+  (40, 'Mozzarella Sticks', 6.50, 'Breaded mozzarella with marinara sauce', false),
+  (40, 'Onion Rings', 5.50, 'Crispy beer-battered onion rings', false),
+  -- Burgers
+  (41, 'Classic Cheeseburger', 10.90, 'Beef patty with cheese, lettuce, tomato', false),
+  (41, 'Bacon BBQ Burger', 12.50, 'Double patty with bacon and BBQ sauce', false),
+  (41, 'Veggie Burger', 9.90, 'Plant-based patty with avocado', false),
+  -- Mains
+  (42, 'NY Strip Steak', 19.90, 'Grilled steak with mashed potatoes', false),
+  (42, 'BBQ Ribs', 16.50, 'Half rack of baby back ribs', false),
+  (42, 'Mac & Cheese', 8.90, 'Creamy macaroni and cheese', false),
+  (42, 'Fish & Chips', 11.50, 'Battered cod with fries', false),
+  -- Desserts
+  (43, 'Brownie Sundae', 6.90, 'Warm brownie with ice cream', false),
+  (43, 'Apple Pie', 5.50, 'Classic American apple pie', false),
+  (43, 'Cheesecake', 6.50, 'New York style cheesecake', false),
+  -- Shakes & Drinks
+  (44, 'Chocolate Shake', 5.50, 'Thick chocolate milkshake', false),
+  (44, 'Strawberry Shake', 5.50, 'Fresh strawberry milkshake', false),
+  (44, 'Coca-Cola', 2.50, 'Classic soft drink', false)
+ON CONFLICT DO NOTHING;
+
+-- Items for Istanbul Grill (Turkish)
+INSERT INTO items (category_id, name, price, description, has_variants) VALUES
+  -- Mezze
+  (45, 'Hummus', 4.50, 'Chickpea dip with olive oil', false),
+  (45, 'Baba Ghanoush', 4.90, 'Smoked eggplant dip', false),
+  (45, 'Mixed Mezze Platter', 9.90, 'Selection of Turkish dips and salads', false),
+  -- Kebabs
+  (46, 'Adana Kebab', 11.90, 'Spicy minced meat kebab', false),
+  (46, 'Shish Kebab', 12.50, 'Marinated lamb cubes on skewer', false),
+  (46, 'Chicken Shish', 10.90, 'Grilled chicken breast pieces', false),
+  (46, 'Mixed Grill', 15.90, 'Combination of all kebabs', false),
+  -- Pide & Lahmacun
+  (47, 'Cheese Pide', 8.50, 'Turkish flatbread with cheese', false),
+  (47, 'Meat Pide', 9.90, 'Boat-shaped pizza with minced meat', false),
+  (47, 'Lahmacun', 6.50, 'Thin flatbread with spiced meat', false),
+  -- Mains
+  (48, 'Iskender Kebab', 13.50, 'Sliced döner with tomato sauce and yogurt', false),
+  (48, 'Manti', 10.90, 'Turkish dumplings with yogurt sauce', false),
+  -- Beverages
+  (49, 'Turkish Tea', 2.00, 'Traditional black tea', false),
+  (49, 'Ayran', 2.50, 'Salted yogurt drink', false)
+ON CONFLICT DO NOTHING;
+
+-- Items for Thai Orchid (Thai)
+INSERT INTO items (category_id, name, price, description, has_variants) VALUES
+  -- Appetizers
+  (50, 'Thai Spring Rolls', 5.50, 'Vegetable spring rolls with sweet chili sauce', false),
+  (50, 'Satay Chicken', 6.90, 'Grilled chicken skewers with peanut sauce', false),
+  (50, 'Tom Yum Goong', 7.50, 'Spicy and sour shrimp soup', false),
+  -- Soups
+  (51, 'Tom Kha Gai', 6.90, 'Coconut milk soup with chicken', false),
+  (51, 'Tom Yum', 6.50, 'Hot and sour soup with mushrooms', false),
+  -- Curries
+  (52, 'Green Curry', 11.50, 'Spicy green curry with chicken or beef', false),
+  (52, 'Red Curry', 11.50, 'Thai red curry with vegetables', false),
+  (52, 'Massaman Curry', 12.50, 'Mild curry with potatoes and peanuts', false),
+  (52, 'Panang Curry', 11.90, 'Rich and creamy peanut curry', false),
+  -- Stir-Fry
+  (53, 'Pad Krapow', 10.90, 'Stir-fried basil with minced meat', false),
+  (53, 'Cashew Chicken', 11.50, 'Chicken with cashews and vegetables', false),
+  -- Noodles & Rice
+  (54, 'Pad Thai', 9.90, 'Stir-fried rice noodles with shrimp', false),
+  (54, 'Pad See Ew', 9.50, 'Flat noodles with soy sauce', false),
+  (54, 'Thai Fried Rice', 8.90, 'Jasmine rice with egg and vegetables', false),
+  -- Beverages
+  (55, 'Thai Iced Tea', 3.50, 'Sweet milk tea with ice', false),
+  (55, 'Singha Beer', 3.80, 'Thai lager beer', false)
+ON CONFLICT DO NOTHING;
+
+-- Items for Seoul BBQ (Korean)
+INSERT INTO items (category_id, name, price, description, has_variants) VALUES
+  -- Appetizers
+  (56, 'Kimchi', 4.50, 'Fermented spicy cabbage', false),
+  (56, 'Mandu', 6.50, 'Korean dumplings (steamed or fried)', false),
+  (56, 'Japchae', 7.90, 'Stir-fried glass noodles with vegetables', false),
+  -- BBQ Meats
+  (57, 'Bulgogi', 14.90, 'Marinated beef for table grill', false),
+  (57, 'Galbi', 16.90, 'Marinated beef short ribs', false),
+  (57, 'Samgyeopsal', 13.50, 'Pork belly slices for grilling', false),
+  (57, 'BBQ Combo', 24.90, 'Mixed meats platter for 2 persons', false),
+  -- Hot Pots
+  (58, 'Kimchi Jjigae', 10.90, 'Spicy kimchi stew with pork', false),
+  (58, 'Sundubu Jjigae', 11.50, 'Soft tofu stew with seafood', false),
+  -- Main Dishes
+  (59, 'Bibimbap', 10.50, 'Mixed rice with vegetables and egg', false),
+  (59, 'Dolsot Bibimbap', 11.90, 'Bibimbap in hot stone pot', false),
+  (59, 'Korean Fried Chicken', 12.50, 'Crispy fried chicken with sweet-spicy sauce', false),
+  -- Beverages
+  (60, 'Soju', 5.50, 'Korean distilled spirit', false),
+  (60, 'Makgeolli', 6.50, 'Traditional rice wine', false)
+ON CONFLICT DO NOTHING;
+
+-- Items for Tapas y Vino (Spanish)
+INSERT INTO items (category_id, name, price, description, has_variants) VALUES
+  -- Tapas Frías
+  (61, 'Jamón Ibérico', 9.90, 'Iberian ham with bread', false),
+  (61, 'Manchego', 7.50, 'Spanish sheep cheese with quince', false),
+  (61, 'Aceitunas', 4.50, 'Marinated olives with herbs', false),
+  (61, 'Pan con Tomate', 5.50, 'Toasted bread with tomato and olive oil', false),
+  -- Tapas Calientes
+  (62, 'Patatas Bravas', 6.50, 'Fried potatoes with spicy sauce', false),
+  (62, 'Gambas al Ajillo', 9.90, 'Garlic shrimp in olive oil', false),
+  (62, 'Croquetas', 7.50, 'Creamy ham croquettes (4 pieces)', false),
+  (62, 'Chorizo al Vino', 8.50, 'Spanish sausage in red wine', false),
+  (62, 'Pimientos de Padrón', 6.90, 'Fried green peppers with sea salt', false),
+  -- Raciones
+  (63, 'Paella Valenciana', 16.90, 'Traditional rice with chicken and seafood', false),
+  (63, 'Pulpo a la Gallega', 14.50, 'Galician-style octopus with paprika', false),
+  (63, 'Tortilla Española', 8.90, 'Spanish potato omelette', false),
+  -- Postres
+  (64, 'Crema Catalana', 5.90, 'Catalan custard with caramelized sugar', false),
+  (64, 'Churros con Chocolate', 6.50, 'Fried dough with hot chocolate', false),
+  -- Bebidas
+  (65, 'Sangria', 5.50, 'Spanish red wine punch', false),
+  (65, 'Rioja (glass)', 6.50, 'Spanish red wine', false)
 ON CONFLICT DO NOTHING;
 
 -- Reset sequences to the current max id
+SELECT setval(pg_get_serial_sequence('restaurants','id'), COALESCE((SELECT MAX(id) FROM restaurants), 1));
+SELECT setval(pg_get_serial_sequence('categories','id'), COALESCE((SELECT MAX(id) FROM categories), 1));
+SELECT setval(pg_get_serial_sequence('items','id'), COALESCE((SELECT MAX(id) FROM items), 1));
+SELECT setval(pg_get_serial_sequence('item_variants','id'), COALESCE((SELECT MAX(id) FROM item_variants), 1));
 SELECT setval(pg_get_serial_sequence('categories','id'), COALESCE((SELECT MAX(id) FROM categories), 1));
 SELECT setval(pg_get_serial_sequence('items','id'), COALESCE((SELECT MAX(id) FROM items), 1));
 
