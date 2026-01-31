@@ -1,6 +1,6 @@
 {
-  "buildCommand": "if command -v flutter > /dev/null; then flutter build web --release; else echo 'Flutter not available, using pre-built files'; fi",
+  "buildCommand": "bash build.sh",
   "outputDirectory": "build/web",
-  "installCommand": "echo 'No install needed - using pre-built files'",
+  "installCommand": "echo 'Dependencies managed in build.sh'",
   "framework": null
 }
