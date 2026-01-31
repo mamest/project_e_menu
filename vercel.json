@@ -2,5 +2,8 @@
   "buildCommand": "bash build.sh",
   "outputDirectory": "build/web",
   "installCommand": "echo 'Dependencies managed in build.sh'",
-  "framework": null
+  "framework": null,
+  "git": {
+    "deploymentEnabled": false
+  }
 }
