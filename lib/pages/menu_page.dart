@@ -510,19 +510,22 @@ class _MenuPageState extends State<MenuPage> {
           ),
         ],
       ),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : errorMessage != null
-              ? Center(
-                  child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(errorMessage!, textAlign: TextAlign.center),
-                ))
-              : categories.isEmpty
-                  ? const Center(child: Text('No menu items found'))
-                  : ListView.builder(
-                      itemCount: categories.length,
-                      itemBuilder: (context, idx) {
+      body: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: loading
+              ? const Center(child: CircularProgressIndicator())
+              : errorMessage != null
+                  ? Center(
+                      child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(errorMessage!, textAlign: TextAlign.center),
+                    ))
+                  : categories.isEmpty
+                      ? const Center(child: Text('No menu items found'))
+                      : ListView.builder(
+                          itemCount: categories.length,
+                          itemBuilder: (context, idx) {
                         final cat = categories[idx];
                         return ExpansionTile(
                           initiallyExpanded: idx == 0,
@@ -675,6 +678,8 @@ class _MenuPageState extends State<MenuPage> {
                         );
                       },
                     ),
+        ),
+      ),
     );
   }
 }

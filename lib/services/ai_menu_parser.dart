@@ -136,8 +136,11 @@ class VariantData {
 
 class AiMenuParser {
   final String _supabaseUrl;
+  final String _supabaseAnonKey;
 
-  AiMenuParser() : _supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
+  AiMenuParser() 
+      : _supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '',
+        _supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
 
   /// Parse a PDF menu file and extract structured menu data
   Future<MenuData> parseMenuPdf(Uint8List pdfBytes, String fileName) async {
@@ -151,6 +154,8 @@ class AiMenuParser {
         Uri.parse('$_supabaseUrl/functions/v1/anthropic-proxy'),
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_supabaseAnonKey',
+          'apikey': _supabaseAnonKey,
         },
         body: jsonEncode({
           'pdfBase64': pdfBase64,
@@ -277,11 +282,22 @@ If any information is not available in the PDF, omit that field or use null.
     }
     
     cleaned = cleaned.substring(startIndex, endIndex + 1);
-
+    
+    // Fix common JSON issues
+    // Remove trailing commas before ] or }
+    cleaned = cleaned.replaceAll(RegExp(r',(\s*[}\]])'), r'$1');
+    
+    // Fix common unicode issues (e.g., invalid escape sequences)
+    cleaned = cleaned.replaceAll(r'\u', r'\\u');
+    
     try {
       return jsonDecode(cleaned) as Map<String, dynamic>;
     } catch (e) {
-      throw Exception('Failed to parse JSON response: $e\n\nResponse was:\n$cleaned');
+      print('DEBUG: Failed to parse JSON');
+      print('DEBUG: Error: $e');
+      print('DEBUG: Cleaned JSON (first 500 chars):');
+      print(cleaned.substring(0, cleaned.length < 500 ? cleaned.length : 500));
+      throw Exception('Failed to parse JSON response: $e\n\nResponse preview:\n${cleaned.substring(0, cleaned.length < 500 ? cleaned.length : 500)}');
     }
   }
 }

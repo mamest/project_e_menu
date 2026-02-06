@@ -1,0 +1,1071 @@
+﻿{
+  "restaurant": {
+    "name": "Mangal",
+    "address": "LindenstraÃe 2, 33142 BÃ¼ren",
+    "phone": "02951-936 3333",
+    "description": "Fresh Food DÃ¶ner & Pizza",
+    "cuisine_type": "Turkish/Pizza",
+    "delivers": true,
+    "opening_hours": {
+      "monday": "Closed",
+      "tuesday": "12:00-22:00",
+      "wednesday": "12:00-22:00",
+      "thursday": "12:00-22:00",
+      "friday": "12:00-22:00",
+      "saturday": "12:00-22:00",
+      "sunday": "12:00-22:00"
+    },
+    "payment_methods": ["Cash", "EC-Card (in restaurant only)"]
+  },
+  "categories": [
+    {
+      "name": "Putendrehspiess nach DÃ¶ner Art",
+      "display_order": 0,
+      "items": [
+        {
+          "name": "Klassik Tasche",
+          "price": 8.00,
+          "description": "im Fladenbrot mit gemischtem Salat & Sauce",
+          "has_variants": false
+        },
+        {
+          "name": "Berlin Tasche",
+          "price": 9.00,
+          "description": "im Fladenbrot mit gemischtem Salat, KÃ¤se, Zitronensaft & Sauce",
+          "has_variants": false
+        },
+        {
+          "name": "Mangal Tasche",
+          "price": 9.00,
+          "description": "im Fladenbrot mit Eisbergsalat, Zwiebeln, Tomaten, RÃ¶stzwiebeln, Currysauce & Snackdressing",
+          "has_variants": false
+        },
+        {
+          "name": "Chilli Tasche",
+          "price": 9.00,
+          "description": "im Fladenbrot mit Eisbergsalat, Zwiebeln, Tomaten, JalapeÃ±os & Snackdressing",
+          "has_variants": false
+        },
+        {
+          "name": "DÃ¼rÃ¼m",
+          "price": 9.00,
+          "description": "DrehspieÃ in frisch gebackenem Teig gerollt, gemischter Salat & Sauce",
+          "has_variants": false
+        },
+        {
+          "name": "DrehspieÃ Box",
+          "price": 8.00,
+          "description": "mit gemischtem Salat oder Pommes & Sauce",
+          "has_variants": false
+        },
+        {
+          "name": "GemÃ¼se DrehspieÃ",
+          "price": 9.00,
+          "description": "mit DrehspieÃfleisch, gebratenem GemÃ¼se, Salat & Sauce",
+          "has_variants": false
+        }
+      ]
+    },
+    {
+      "name": "Putendrehspiessteller",
+      "display_order": 1,
+      "items": [
+        {
+          "name": "DrehspieÃteller I",
+          "price": 12.00,
+          "description": "mit Pommes, Zwiebeln & Zaziki",
+          "has_variants": false
+        },
+        {
+          "name": "DrehspieÃteller II",
+          "price": 14.00,
+          "description": "mit Pommes, gemischtem Salat, Zwiebeln & Zaziki",
+          "has_variants": false
+        },
+        {
+          "name": "DrehspieÃteller Mangal",
+          "price": 15.00,
+          "description": "mit Pilzen, Zwiebeln, Paprika, Tomatensauce, Pommes & gemischtem Salat",
+          "has_variants": false
+        },
+        {
+          "name": "DrehspieÃteller Chef",
+          "price": 15.00,
+          "description": "mit Pilzen, Zwiebeln, Sahnesauce, Pommes & gem. Salat",
+          "has_variants": false
+        }
+      ]
+    },
+    {
+      "name": "Putendrehspiess Ãberbacken",
+      "display_order": 2,
+      "items": [
+        {
+          "name": "DrehspieÃ Ã¼berbacken",
+          "price": 16.00,
+          "description": "mit Zwiebeln, Tomatensauce & KÃ¤se, inkl. 5 PizzabrÃ¶tchen",
+          "has_variants": false
+        },
+        {
+          "name": "DrehspieÃauflauf Mangal",
+          "price": 16.00,
+          "description": "mit Pilzen, Paprika, Zwiebeln, Tomatensauce & KÃ¤se, inkl. 5 PizzabrÃ¶tchen",
+          "has_variants": false
+        },
+        {
+          "name": "DrehspieÃauflauf Chef",
+          "price": 16.00,
+          "description": "mit Pilzen, Zwiebeln, Sahnesauce & KÃ¤se, inkl. 5 PizzabrÃ¶tchen",
+          "has_variants": false
+        }
+      ]
+    },
+    {
+      "name": "Lahmacun",
+      "display_order": 3,
+      "items": [
+        {
+          "name": "Lahmacun",
+          "price": 8.00,
+          "description": "mit Salat, HirtenkÃ¤se & Sauce",
+          "has_variants": false
+        },
+        {
+          "name": "Lahmacun mit DrehspieÃfleisch",
+          "price": 9.00,
+          "description": "mit DrehspieÃfleisch, Salat & Sauce",
+          "has_variants": false
+        }
+      ]
+    },
+    {
+      "name": "Vegetarische Gerichte",
+      "display_order": 4,
+      "items": [
+        {
+          "name": "Salat Tasche",
+          "price": 6.00,
+          "description": "gemischter Salat, HirtenkÃ¤se & Sauce",
+          "has_variants": false
+        },
+        {
+          "name": "Veggie Rolle",
+          "price": 7.00,
+          "description": "gemischter Salat, HirtenkÃ¤se, Sauce, im dÃ¼nnem Teig eingerollt",
+          "has_variants": false
+        },
+        {
+          "name": "Falafel Tasche",
+          "price": 8.00,
+          "description": "mit Falafeln, gemischtem Salat & Sauce",
+          "has_variants": false
+        },
+        {
+          "name": "Falafel Rolle",
+          "price": 8.00,
+          "description": "mit Falafeln, gemischtem Salat, Sauce, im dÃ¼nnen Teig eingerollt",
+          "has_variants": false
+        },
+        {
+          "name": "Falafel Teller",
+          "price": 10.00,
+          "description": "mit Falafeln, gemischtem Salat, Pommes & Sauce",
+          "has_variants": false
+        }
+      ]
+    },
+    {
+      "name": "Imbissgerichte",
+      "display_order": 5,
+      "items": [
+        {
+          "name": "Pommes",
+          "description": "",
+          "has_variants": true,
+          "variants": [
+            {"name": "klein", "price": 3.50, "display_order": 0},
+            {"name": "groÃ", "price": 5.00, "display_order": 1}
+          ]
+        },
+        {
+          "name": "Pommes Spezial",
+          "description": "mit Zwiebeln, Salat-Mayo, Ketchup & RÃ¶stzwiebeln",
+          "has_variants": true,
+          "variants": [
+            {"name": "klein", "price": 4.50, "display_order": 0},
+            {"name": "groÃ", "price": 6.50, "display_order": 1}
+          ]
+        },
+        {
+          "name": "Pommes Chilli",
+          "description": "mit Zwiebeln, Currysauce, Salat-Mayo, RÃ¶stzwiebeln & JalapeÃ±os",
+          "has_variants": true,
+          "variants": [
+            {"name": "klein", "price": 4.50, "display_order": 0},
+            {"name": "groÃ", "price": 6.50, "display_order": 1}
+          ]
+        },
+        {
+          "name": "Bratwurst",
+          "price": 3.50,
+          "description": "",
+          "has_variants": false
+        },
+        {
+          "name": "Currywurst",
+          "price": 4.00,
+          "description": "",
+          "has_variants": false
+        },
+        {
+          "name": "Currywurst mit Pommes & Salat-Mayo",
+          "price": 8.00,
+          "description": "",
+          "has_variants": false
+        }
+      ]
+    },
+    {
+      "name": "Unsere Saucen",
+      "display_order": 6,
+      "items": [
+        {
+          "name": "Saucen",
+          "price": 2.00,
+          "description": "Zaziki, Knoblauchsauce, Joghurtsauce, Currysauce, KrÃ¤utersauce, Aioli, scharfe Sauce",
+          "has_variants": false
+        }
+      ]
+    },
+    {
+      "name": "PizzabrÃ¶tchen",
+      "display_order": 7,
+      "items": [
+        {
+          "name": "PizzabrÃ¶tchen ohne FÃ¼llung",
+          "price": 5.00,
+          "description": "mit KÃ¤se gefÃ¼llt",
+          "has_variants": false
+        },
+        {
+          "name": "PizzabrÃ¶tchen mit DrehspieÃfleisch & Sauce Hollandaise",
+          "price": 10.00,
+          "description": "mit KÃ¤se gefÃ¼llt",
+          "has_variants": false
+        },
+        {
+          "name": "PizzabrÃ¶tchen mit Broccoli & Sauce Hollandaise",
+          "price": 9.50,
+          "description": "mit KÃ¤se gefÃ¼llt",
+          "has_variants": false
+        },
+        {
+          "name": "PizzabrÃ¶tchen mit Spinat & HirtenkÃ¤se",
+          "price": 9.00,
+          "description": "mit KÃ¤se gefÃ¼llt",
+          "has_variants": false
+        },
+        {
+          "name": "PizzabrÃ¶tchen mit Champignons",
+          "price": 9.00,
+          "description": "mit KÃ¤se gefÃ¼llt",
+          "has_variants": false
+        },
+        {
+          "name": "PizzabrÃ¶tchen mit KÃ¤se",
+          "price": 8.00,
+          "description": "mit KÃ¤se gefÃ¼llt",
+          "has_variants": false
+        },
+        {
+          "name": "PizzabrÃ¶tchen mit Salami",
+          "price": 9.00,
+          "description": "mit KÃ¤se gefÃ¼llt",
+          "has_variants": false
+        },
+        {
+          "name": "PizzabrÃ¶tchen mit Formfleischvorderschinken",
+          "price": 9.00,
+          "description": "mit KÃ¤se gefÃ¼llt",
+          "has_variants": false
+        },
+        {
+          "name": "PizzabrÃ¶tchen mit Thunfisch",
+          "price": 9.00,
+          "description": "mit KÃ¤se gefÃ¼llt",
+          "has_variants": false
+        },
+        {
+          "name": "PizzabrÃ¶tchen mit DrehspieÃfleisch",
+          "price": 9.00,
+          "description": "mit KÃ¤se gefÃ¼llt",
+          "has_variants": false
+        }
+      ]
+    },
+    {
+      "name": "Pizza Classica",
+      "display_order": 8,
+      "items": [
+        {
+          "name": "Margherita",
+          "description": "mit Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 7.50, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 9.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 28.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Salami",
+          "description": "mit Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 8.50, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 10.50, "display_order": 1},
+            {"name": "50 cm Family", "price": 32.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Prosciutto",
+          "description": "mit Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 8.50, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 10.50, "display_order": 1},
+            {"name": "50 cm Family", "price": 32.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Funghi",
+          "description": "mit Champignons, Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 8.50, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 10.50, "display_order": 1},
+            {"name": "50 cm Family", "price": 32.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Hawaii",
+          "description": "mit Formfleischvorderschinken & Ananas, Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 9.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 11.50, "display_order": 1},
+            {"name": "50 cm Family", "price": 34.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Salami & Paprika",
+          "description": "mit Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 9.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 11.50, "display_order": 1},
+            {"name": "50 cm Family", "price": 34.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Salami & Champignons",
+          "description": "mit Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 9.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 11.50, "display_order": 1},
+            {"name": "50 cm Family", "price": 34.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Diavolo",
+          "description": "mit Salami, Zwiebeln, JalapeÃ±os & frischem Knoblauch, Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 9.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 11.50, "display_order": 1},
+            {"name": "50 cm Family", "price": 34.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Prosciutto Funghi",
+          "description": "mit Formfleischvorderschinken & Champignons, Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 9.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 11.50, "display_order": 1},
+            {"name": "50 cm Family", "price": 34.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Spinaci",
+          "description": "mit Spinat, Formfleischvorderschinken & Spiegelei, Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 9.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 11.50, "display_order": 1},
+            {"name": "50 cm Family", "price": 34.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Sole Mio",
+          "description": "mit Formfleischvorderschinken, Champignons, Spargel & Spiegelei, Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 9.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 12.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 35.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Quattro Stagioni",
+          "description": "Formfleischvorderschinken, Champignons, Paprika & Artischocken, Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 9.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 12.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 35.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Romana",
+          "description": "mit Formfleischvorderschinken, Salami, Artischocken, Oliven & Ei, Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 9.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 12.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 35.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Quattro Formaggi",
+          "description": "mit Gouda, Mozzarella, Gorgonzola & HirtenkÃ¤se, Tomatensauce",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 9.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 12.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 35.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Kentucky",
+          "description": "mit HÃ¤hnchenbrust, Mozzarella & frischen Tomaten, Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 9.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 12.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 36.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Pizza Chef",
+          "description": "mit HÃ¤hnchenbrust, Broccoli, Paprika, Zwiebeln & Mais, Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 9.50, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 12.50, "display_order": 1},
+            {"name": "50 cm Family", "price": 36.00, "display_order": 2}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pizza Putendrehspiess",
+      "display_order": 9,
+      "items": [
+        {
+          "name": "DrehspieÃpizza I",
+          "description": "mit DrehspieÃfleisch, Zwiebeln & Zaziki, Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 10.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 12.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 36.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "DrehspieÃpizza II",
+          "description": "mit DrehspieÃfleisch, frische Tomaten, milde Peperoni & HirtenkÃ¤se, Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 10.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 12.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 36.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Pizza Mangal",
+          "description": "mit DrehspieÃfleisch, Zwiebeln, JalapeÃ±os & Sauce Hollandaise, Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 10.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 13.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 38.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Pizza Bauna",
+          "description": "mit DrehspieÃfleisch, Formfleischvorderschinken, frische Tomaten & Mozzarella, Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 10.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 13.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 38.00, "display_order": 2}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pizza Vegetarisch",
+      "display_order": 10,
+      "items": [
+        {
+          "name": "Vegetale",
+          "description": "mit Broccoli, Spinat & Artischocken, Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 9.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 11.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 35.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Campioni",
+          "description": "mit Champignons, Spinat, Broccoli, Paprika & Zwiebeln, Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 9.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 11.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 35.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Pizza Spezial",
+          "description": "mit Spinat, frischen Tomaten & Mozzarella, Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 9.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 11.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 35.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Pizza Has",
+          "description": "mit Tomaten, Zwiebeln, milde Peperoni & HirtenkÃ¤se, Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 9.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 11.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 35.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Pizza Mexicana",
+          "description": "mit Broccoli, Paprika, Zwiebeln & Mais, Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 9.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 11.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 35.00, "display_order": 2}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pizza di Mare",
+      "display_order": 11,
+      "items": [
+        {
+          "name": "Tonne e Cipolla",
+          "description": "mit Thunfisch & Zwiebeln, Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 9.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 12.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 36.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Tonno Spezial",
+          "description": "mit Thunfisch, Paprika, Broccoli & Zwiebeln, Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 9.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 12.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 36.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Pizza Eko",
+          "description": "mit frischen Tomaten, Zwiebeln, milde Peperoni, Garnelen & frischem Knoblauch, Tomatensauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 10.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 13.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 40.00, "display_order": 2}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pizza Sauce Hollandaise",
+      "display_order": 12,
+      "items": [
+        {
+          "name": "Keskin",
+          "description": "mit DrehspieÃfleisch, Zwiebeln, frische Tomaten & JalapeÃ±os, Sauce Hollandaise & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 10.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 13.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 36.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "California",
+          "description": "mit Formfleischvorderschinken & Broccoli, Sauce Hollandaise & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 10.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 13.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 36.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "New York",
+          "description": "mit Spinat & Garnelen, Sauce Hollandaise & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 10.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 13.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 38.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Paris",
+          "description": "mit Thunfisch & Ananas, Sauce Hollandaise & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 10.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 12.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 36.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Hong Kong",
+          "description": "mit frischen Tomaten, Mozzarella & Spinat, Sauce Hollandaise & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 10.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 12.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 36.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Boston",
+          "description": "mit Paprika, Broccoli, Mais & HÃ¤hnchenbrust, Sauce Hollandaise & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 10.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 12.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 36.00, "display_order": 2}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pizza Barbecue Sauce",
+      "display_order": 13,
+      "items": [
+        {
+          "name": "Pizza Amore",
+          "description": "mit Paprika, Zwiebeln, Mais & HÃ¤hnchenbrust, Barbecue Sauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 10.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 12.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 36.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Pizza Cara",
+          "description": "mit Formfleischvorderschinken, Ananas & HÃ¤hnchenbrust, Barbecue Sauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 10.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 12.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 36.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Pizza Picante",
+          "description": "mit Salami, Paprika, JalapeÃ±os, Mais & HÃ¤hnchenbrust, Barbecue Sauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 10.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 12.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 36.00, "display_order": 2}
+          ]
+        },
+        {
+          "name": "Pizza 007",
+          "description": "mit Tomaten, Zwiebeln, milden Peperoni & HirtenkÃ¤se, Barbecue Sauce & KÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 10.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 12.00, "display_order": 1},
+            {"name": "50 cm Family", "price": 36.00, "display_order": 2}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pizza Bianca",
+      "display_order": 14,
+      "items": [
+        {
+          "name": "Bianca Pastore",
+          "description": "mit DrehspieÃfleisch, Zwiebeln & HirtenkÃ¤se, aus dÃ¼nnem Pizzateig mit Knoblauch, Rucola, Tomaten und KrÃ¤utersauce",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 10.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 13.00, "display_order": 1}
+          ]
+        },
+        {
+          "name": "Bianca Vegetale",
+          "description": "mit Artischocken, HirtenkÃ¤se & Oliven, aus dÃ¼nnem Pizzateig mit Knoblauch, Rucola, Tomaten und KrÃ¤utersauce",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 10.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 13.00, "display_order": 1}
+          ]
+        },
+        {
+          "name": "Bianca BÃ¼ren",
+          "description": "mit Putenbrust, Mais & Parmesan, aus dÃ¼nnem Pizzateig mit Knoblauch, Rucola, Tomaten und KrÃ¤utersauce",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 10.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 13.00, "display_order": 1}
+          ]
+        },
+        {
+          "name": "Bianca Deluxe",
+          "description": "mit gebratenen Gambas & Parmesan, aus dÃ¼nnem Pizzateig mit Knoblauch, Rucola, Tomaten und KrÃ¤utersauce",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 12.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 15.00, "display_order": 1}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pizza Calzone",
+      "display_order": 15,
+      "items": [
+        {
+          "name": "Calzone I",
+          "description": "mit Formfleischvorderschinken, DrehspieÃfleisch, Pilze & Mozzarella",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 10.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 12.00, "display_order": 1}
+          ]
+        },
+        {
+          "name": "Calzone II",
+          "description": "mit DrehspieÃfleisch, Zwiebeln, Peperoni & HirtenkÃ¤se",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 10.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 12.00, "display_order": 1}
+          ]
+        },
+        {
+          "name": "Calzone III",
+          "description": "mit Thunfisch, Formfleischvorderschinken, Salami & Zwiebeln",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 10.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 12.00, "display_order": 1}
+          ]
+        },
+        {
+          "name": "Calzone IV",
+          "description": "mit Formfleischvorderschinken, Ananas, HÃ¤hnchenbrust & Sauce Hollandaise",
+          "has_variants": true,
+          "variants": [
+            {"name": "24 cm klein", "price": 10.00, "display_order": 0},
+            {"name": "28 cm groÃ", "price": 12.00, "display_order": 1}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Rollos",
+      "display_order": 16,
+      "items": [
+        {
+          "name": "Rollo Salami",
+          "price": 13.00,
+          "description": "mit Salami, milde Peperoni, Zwiebeln & Sauce, aus dÃ¼nnem Pizzateig mit Tomatensauce & Gouda gefÃ¼llt",
+          "has_variants": false
+        },
+        {
+          "name": "Rollo Casa",
+          "price": 13.00,
+          "description": "mit Formfleischvorderschinken, Champignons & Sauce, aus dÃ¼nnem Pizzateig mit Tomatensauce & Gouda gefÃ¼llt",
+          "has_variants": false
+        },
+        {
+          "name": "Rollo DÃ¶ner",
+          "price": 13.00,
+          "description": "mit DrehspieÃfleisch, HirtenkÃ¤se, Peperoni & Sauce, aus dÃ¼nnem Pizzateig mit Tomatensauce & Gouda gefÃ¼llt",
+          "has_variants": false
+        },
+        {
+          "name": "Rollo Tonno",
+          "price": 13.00,
+          "description": "mit Thunfisch, Zwiebeln & Sauce, aus dÃ¼nnem Pizzateig mit Tomatensauce & Gouda gefÃ¼llt",
+          "has_variants": false
+        },
+        {
+          "name": "Rollo Hawaii",
+          "price": 13.00,
+          "description": "mit Formfleischvorderschinken, Ananas & Sauce, aus dÃ¼nnem Pizzateig mit Tomatensauce & Gouda gefÃ¼llt",
+          "has_variants": false
+        },
+        {
+          "name": "Rollo Vegetaria",
+          "price": 13.00,
+          "description": "mit Spinat, Broccoli, Paprika, Zwiebeln & Sauce, aus dÃ¼nnem Pizzateig mit Tomatensauce & Gouda gefÃ¼llt",
+          "has_variants": false
+        },
+        {
+          "name": "Rollo Chilli",
+          "price": 14.00,
+          "description": "mit DrehspieÃfleisch, Zwiebeln, JalapeÃ±os & Sauce Hollandaise, aus dÃ¼nnem Pizzateig mit Tomatensauce & Gouda gefÃ¼llt",
+          "has_variants": false
+        }
+      ]
+    },
+    {
+      "name": "Nudelgerichte Ãberbacken",
+      "display_order": 17,
+      "items": [
+        {
+          "name": "Napoli",
+          "price": 8.00,
+          "description": "mit Tomatensauce, mit Penne und KÃ¤se Ã¼berbacken inkl. 5 PizzabrÃ¶tchen",
+          "has_variants": false
+        },
+        {
+          "name": "Hawaii",
+          "price": 12.00,
+          "description": "mit Formfleischvorderschinken, Ananas & Sahnesauce, mit Penne und KÃ¤se Ã¼berbacken inkl. 5 PizzabrÃ¶tchen",
+          "has_variants": false
+        },
+        {
+          "name": "Mangal",
+          "price": 12.00,
+          "description": "mit DrehspieÃfleisch, Broccoli & Sahnesauce, mit Penne und KÃ¤se Ã¼berbacken inkl. 5 PizzabrÃ¶tchen",
+          "has_variants": false
+        },
+        {
+          "name": "Roma",
+          "price": 12.00,
+          "description": "mit Broccoli, Champignons & Sahnesauce, mit Penne und KÃ¤se Ã¼berbacken inkl. 5 PizzabrÃ¶tchen",
+          "has_variants": false
+        },
+        {
+          "name": "Nudeln a la Turka",
+          "price": 12.00,
+          "description": "mit Putenbrust, Mais, Champignons & Sahnesauce, mit Penne und KÃ¤se Ã¼berbacken inkl. 5 PizzabrÃ¶tchen",
+          "has_variants": false
+        },
+        {
+          "name": "Nudeln a la Chef",
+          "price": 12.00,
+          "description": "mit Broccoli, Spinat, HirtenkÃ¤se & Sahnesauce, mit Penne und KÃ¤se Ã¼berbacken inkl. 5 PizzabrÃ¶tchen",
+          "has_variants": false
+        },
+        {
+          "name": "Nudeln Chilli",
+          "price": 12.00,
+          "description": "mit DrehspieÃfleisch, Zwiebeln, JalapeÃ±os & Tomatensauce, mit Penne und KÃ¤se Ã¼berbacken inkl. 5 PizzabrÃ¶tchen",
+          "has_variants": false
+        },
+        {
+          "name": "Nudeln Tonno",
+          "price": 12.00,
+          "description": "mit Thunfisch, Zwiebeln & Tomatensauce, mit Penne und KÃ¤se Ã¼berbacken inkl. 5 PizzabrÃ¶tchen",
+          "has_variants": false
+        },
+        {
+          "name": "Nudeln Spezial",
+          "price": 12.00,
+          "description": "mit Putenbrust, Mais, Champignons, Zwiebeln, Paprika & Tomatensauce, mit Penne und KÃ¤se Ã¼berbacken inkl. 5 PizzabrÃ¶tchen",
+          "has_variants": false
+        },
+        {
+          "name": "Nudeln Has",
+          "price": 10.50,
+          "description": "mit DrehspieÃfleisch, Champignons, Zwiebeln, Paprika & Tomatensauce, mit Penne und KÃ¤se Ã¼berbacken inkl. 5 PizzabrÃ¶tchen",
+          "has_variants": false
+        }
+      ]
+    },
+    {
+      "name": "Schnitzelgerichte",
+      "display_order": 18,
+      "items": [
+        {
+          "name": "Schnitzel Natur",
+          "price": 12.00,
+          "description": "mit Pommes und Salat, aus zartem Schweinelachs",
+          "has_variants": false
+        },
+        {
+          "name": "Balkanschnitzel",
+          "price": 14.00,
+          "description": "mit wÃ¼rziger Paprikasauce, mit Pommes und Salat, aus zartem Schweinelachs",
+          "has_variants": false
+        },
+        {
+          "name": "JÃ¤gerschnitzel",
+          "price": 14.00,
+          "description": "mit Pommes und Salat, aus zartem Schweinelachs",
+          "has_variants": false
+        },
+        {
+          "name": "Champignon-Rahmschnitzel",
+          "price": 14.00,
+          "description": "mit Champignons & Rahmsauce, mit Pommes und Salat, aus zartem Schweinelachs",
+          "has_variants": false
+        },
+        {
+          "name": "Champignonschnitzel",
+          "price": 14.00,
+          "description": "mit Champignons & Sahnesauce, mit Pommes und Salat, aus zartem Schweinelachs",
+          "has_variants": false
+        },
+        {
+          "name": "Zwiebelschnitzel",
+          "price": 14.00,
+          "description": "mit Zwiebeln, Champignons & Sahnesauce, mit Pommes und Salat, aus zartem Schweinelachs",
+          "has_variants": false
+        },
+        {
+          "name": "Chillischnitzel",
+          "price": 14.00,
+          "description": "mit Champignons, Zwiebeln, Paprika, JalapeÃ±os & Tomatensauce, mit Pommes und Salat, aus zartem Schweinelachs",
+          "has_variants": false
+        },
+        {
+          "name": "Schnitzel Hawaii",
+          "price": 15.00,
+          "description": "mit Ananas, Formfleischvorderschinken, Sauce Hollandaise & Gouda Ã¼berbacken, mit Pommes und Salat, aus zartem Schweinelachs",
+          "has_variants": false
+        },
+        {
+          "name": "Spargelschnitzel",
+          "price": 15.00,
+          "description": "mit Spargel, Sauce Hollandaise & Gouda Ã¼berbacken, mit Pommes und Salat, aus zartem Schweinelachs",
+          "has_variants": false
+        },
+        {
+          "name": "Broccolischnitzel",
+          "price": 13.00,
+          "description": "mit Broccoli, Sauce Hollandaise & Gouda Ã¼berbacken, mit Pommes und Salat, aus zartem Schweinelachs",
+          "has_variants": false
+        }
+      ]
+    },
+    {
+      "name": "Salate",
+      "display_order": 19,
+      "items": [
+        {
+          "name": "Insalata Mista",
+          "description": "gemischter Salat (grÃ¼ner Salat, Tomaten, Paprika, Zwiebeln, Gurken & Mais), inkl. 5 PizzabrÃ¶tchen",
+          "has_variants": true,
+          "variants": [
+            {"name": "klein", "price": 7.00, "display_order": 0},
+            {"name": "groÃ", "price": 9.00, "display_order": 1}
+          ]
+        },
+        {
+          "name": "Insalata Milano",
+          "description": "mit gemischtem Salat, Thunfisch, KÃ¤se, Artischocken, Oliven & Ei, inkl. 5 PizzabrÃ¶tchen",
+          "has_variants": true,
+          "variants": [
+            {"name": "klein", "price": 9.00, "display_order": 0},
+            {"name": "groÃ", "price": 11.00, "display_order": 1}
+          ]
+        },
+        {
+          "name": "Insalata Charlot",
+          "description": "mit gemischtem Salat, Formfleischvorderschinken, Salami, Spargel & Ei, inkl. 5 PizzabrÃ¶tchen",
+          "has_variants": true,
+          "variants": [
+            {"name": "klein", "price": 9.00, "display_order": 0},
+            {"name": "groÃ", "price": 12.00, "display_order": 1}
+          ]
+        },
+        {
+          "name": "Bauernsalat",
+          "description": "mit Eisbergsalat, Rucola, Zwiebeln, Paprika & HirtenkÃ¤se, inkl. 5 PizzabrÃ¶tchen",
+          "has_variants": true,
+          "variants": [
+            {"name": "klein", "price": 9.00, "display_order": 0},
+            {"name": "groÃ", "price": 12.00, "display_order": 1}
+          ]
+        },
+        {
+          "name": "Hawaii Salat",
+          "description": "mit gemischtem Salat, Ananas, Formfleischvorderschinken & DrehspieÃfleisch, inkl. 5 PizzabrÃ¶tchen",
+          "has_variants": true,
+          "variants": [
+            {"name": "klein", "price": 9.00, "display_order": 0},
+            {"name": "groÃ", "price": 12.00, "display_order": 1}
+          ]
+        },
+        {
+          "name": "Chef Salat",
+          "description": "mit gemischtem Salat, Mozzarella, HÃ¤hnchenbrust & Ei, inkl. 5 PizzabrÃ¶tchen",
+          "has_variants": true,
+          "variants": [
+            {"name": "klein", "price": 9.00, "display_order": 0},
+            {"name": "groÃ", "price": 12.00, "display_order": 1}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "GetrÃ¤nke",
+      "display_order": 20,
+      "items": [
+        {
+          "name": "Cola, Cola Light, Fanta, Sprite, Uludag",
+          "price": 2.80,
+          "description": "0,33 l",
+          "has_variants": false
+        },
+        {
+          "name": "Mineralwasser",
+          "price": 2.50,
+          "description": "0,33 l",
+          "has_variants": false
+        },
+        {
+          "name": "Ayran",
+          "price": 2.50,
+          "description": "0,25 l",
+          "has_variants": false
+        }
+      ]
+    }
+  ]
+}

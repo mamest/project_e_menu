@@ -74,39 +74,58 @@ Deno.serve(async (req: Request): Promise<Response> => {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 4096,
+        model: 'claude-sonnet-4-5',
+        max_tokens: 16384,
         messages: [{
           role: 'user',
           content: [
             {
               type: 'text',
-              text: 'Analyze this restaurant menu PDF and extract all information into a structured JSON format. ' +
-                    'Respond with ONLY valid JSON in this exact structure:\n' +
+              text: 'Analyze this restaurant menu PDF and extract all information into a structured JSON format.\n\n' +
+                    'CRITICAL: Return ONLY valid JSON. No markdown, no code blocks, no explanations. Start with { and end with }.\n\n' +
+                    'Use this EXACT structure:\n' +
                     '{\n' +
-                    '  "restaurantName": "string",\n' +
+                    '  "restaurant": {\n' +
+                    '    "name": "Restaurant Name",\n' +
+                    '    "address": "Full Address",\n' +
+                    '    "phone": "+49 123 456789",\n' +
+                    '    "email": "email@example.com",\n' +
+                    '    "description": "Brief description",\n' +
+                    '    "cuisine_type": "Italian",\n' +
+                    '    "delivers": true,\n' +
+                    '    "opening_hours": {"monday": "11:00-22:00"},\n' +
+                    '    "payment_methods": ["Cash", "Card"]\n' +
+                    '  },\n' +
                     '  "categories": [\n' +
                     '    {\n' +
-                    '      "name": "string",\n' +
+                    '      "name": "Category Name",\n' +
+                    '      "display_order": 0,\n' +
                     '      "items": [\n' +
                     '        {\n' +
-                    '          "name": "string",\n' +
-                    '          "description": "string (optional)",\n' +
-                    '          "basePrice": number,\n' +
+                    '          "name": "Item Name",\n' +
+                    '          "price": 9.99,\n' +
+                    '          "description": "Description",\n' +
+                    '          "has_variants": false\n' +
+                    '        },\n' +
+                    '        {\n' +
+                    '          "name": "Item with variants",\n' +
+                    '          "description": "Description",\n' +
+                    '          "has_variants": true,\n' +
                     '          "variants": [\n' +
-                    '            {\n' +
-                    '              "name": "string",\n' +
-                    '              "price": number\n' +
-                    '            }\n' +
+                    '            {"name": "Small", "price": 7.50, "display_order": 0},\n' +
+                    '            {"name": "Large", "price": 9.50, "display_order": 1}\n' +
                     '          ]\n' +
                     '        }\n' +
                     '      ]\n' +
                     '    }\n' +
                     '  ]\n' +
-                    '}\n' +
-                    'Extract menu categories, items, prices, and variants. ' +
-                    'If an item has no variants, use an empty array. ' +
-                    'Do not include any explanatory text, only the JSON.'
+                    '}\n\n' +
+                    'Rules:\n' +
+                    '- All prices as numbers (9.99 not "9,99 €")\n' +
+                    '- If item has variants, omit "price" field and set "has_variants": true\n' +
+                    '- If item has no variants, include "price" and set "has_variants": false\n' +
+                    '- Omit fields if not found (except required ones)\n' +
+                    '- Return ONLY the JSON object, nothing else'
             },
             {
               type: 'document',

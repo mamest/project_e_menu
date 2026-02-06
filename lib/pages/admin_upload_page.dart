@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/ai_menu_parser.dart';
+import '../services/geocoding_service.dart';
+import '../services/unsplash_service.dart';
 
 class AdminUploadPage extends StatefulWidget {
   const AdminUploadPage({super.key});
@@ -88,6 +90,22 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
     try {
       final supabase = Supabase.instance.client;
 
+      // Geocode the address to get latitude and longitude
+      print('Geocoding address: ${_extractedData!.restaurant.address}');
+      final coordinates = await GeocodingService.geocodeAddress(
+        _extractedData!.restaurant.address,
+      );
+      final latitude = coordinates?['latitude'];
+      final longitude = coordinates?['longitude'];
+      print('Geocoded: lat=$latitude, lon=$longitude');
+
+      // Fetch restaurant image from Unsplash
+      print('Fetching image for cuisine: ${_extractedData!.restaurant.cuisineType}');
+      final imageUrl = await UnsplashService.getRestaurantImage(
+        _extractedData!.restaurant.cuisineType,
+      );
+      print('Image URL: $imageUrl');
+
       // Insert restaurant
       final restaurantResponse = await supabase
           .from('restaurants')
@@ -101,6 +119,9 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
             'delivers': _extractedData!.restaurant.delivers,
             'opening_hours': _extractedData!.restaurant.openingHours,
             'payment_methods': _extractedData!.restaurant.paymentMethods,
+            'latitude': latitude,
+            'longitude': longitude,
+            'image_url': imageUrl,
           })
           .select('id')
           .single();
@@ -184,11 +205,14 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
         title: const Text('Upload Menu PDF'),
         backgroundColor: Colors.teal,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+      body: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
             // Instructions
             Card(
               color: Colors.blue.shade50,
@@ -398,6 +422,8 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
               ),
             ],
           ],
+        ),
+          ),
         ),
       ),
     );
