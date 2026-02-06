@@ -143,6 +143,7 @@ class AiMenuParser {
   Future<MenuData> parseMenuPdf(Uint8List pdfBytes, String fileName) async {
     try {
       final pdfBase64 = base64Encode(pdfBytes);
+      final prompt = _buildMenuExtractionPrompt();
 
       // Call Supabase Edge Function (secure proxy to Anthropic API)
       // This avoids CORS issues and keeps API key secure server-side
@@ -153,6 +154,7 @@ class AiMenuParser {
         },
         body: jsonEncode({
           'pdfBase64': pdfBase64,
+          'prompt': prompt,
         }),
       );
 

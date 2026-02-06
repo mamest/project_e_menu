@@ -61,3 +61,4 @@ supabase/.temp
 *.g.dart
 *.freezed.dart
 *.mocks.dart
+existing_pdf_menues/*
