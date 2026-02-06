@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/cart.dart';
 import '../models/menu_item.dart';
 import '../models/restaurant.dart';
+import '../services/pdf_service.dart';
 
 class MenuPage extends StatefulWidget {
   final Restaurant restaurant;
@@ -436,6 +437,35 @@ class _MenuPageState extends State<MenuPage> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            onPressed: () async {
+              if (categories.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Menu is still loading...'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+                return;
+              }
+
+              try {
+                await PdfService.generateMenuPdf(widget.restaurant, categories);
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error generating PDF: $e'),
+                      backgroundColor: Colors.red,
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                }
+              }
+            },
+            tooltip: 'Download Menu PDF',
+          ),
           IconButton(
             icon: const Icon(Icons.info_outline),
             onPressed: () {

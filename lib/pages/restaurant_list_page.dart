@@ -11,6 +11,7 @@ import 'dart:math';
 import '../models/cart.dart';
 import '../models/restaurant.dart';
 import 'menu_page.dart';
+import 'admin_upload_page.dart';
 
 class RestaurantListPage extends StatefulWidget {
   const RestaurantListPage({super.key});
@@ -581,6 +582,23 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
           ),
           child: _buildBody(displayRestaurants),
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AdminUploadPage(),
+            ),
+          );
+          // Reload restaurants if a new one was added
+          if (result == true) {
+            _loadRestaurants();
+          }
+        },
+        icon: const Icon(Icons.add),
+        label: const Text('Upload Menu PDF'),
+        backgroundColor: Colors.purple,
       ),
     );
   }
@@ -1176,7 +1194,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
           filterDeliveryOnly = value ? true : null;
         });
       },
-      activeColor: Colors.teal,
+      activeThumbColor: Colors.teal,
       contentPadding: EdgeInsets.zero,
     );
   }
