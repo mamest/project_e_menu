@@ -10,8 +10,12 @@ import 'dart:math';
 
 import '../models/cart.dart';
 import '../models/restaurant.dart';
+import '../services/auth_service.dart';
 import 'menu_page.dart';
 import 'admin_upload_page.dart';
+import 'login_page.dart';
+import 'edit_restaurant_page.dart';
+import 'create_restaurant_page.dart';
 
 class RestaurantListPage extends StatefulWidget {
   const RestaurantListPage({super.key});
@@ -39,6 +43,9 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
   double radiusKm = 5.0;
   bool _filterByLocation = false;
   bool _isLoadingLocation = false;
+
+  // Auth
+  final AuthService _authService = AuthService();
 
   @override
   void initState() {
@@ -104,7 +111,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
           supabaseUrl.isNotEmpty &&
           supabaseKey.isNotEmpty) {
         var query = Supabase.instance.client.from('restaurants').select(
-            'id, name, address, email, phone, description, image_url, cuisine_type, delivers, opening_hours, payment_methods, latitude, longitude');
+            'id, name, address, email, phone, description, image_url, cuisine_type, delivers, opening_hours, payment_methods, latitude, longitude, restaurant_owner_uuid');
 
         // Apply server-side location filtering with bounding box
         if (latitude != null && longitude != null && radiusKm != null) {
@@ -583,30 +590,54 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
           child: _buildBody(displayRestaurants),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AdminUploadPage(),
-            ),
-          );
-          // Reload restaurants if a new one was added
-          if (result == true) {
-            _loadRestaurants();
-          }
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('Upload Menu PDF'),
-        backgroundColor: Colors.purple,
-      ),
+      floatingActionButton: _authService.isLoggedIn
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                FloatingActionButton.extended(
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CreateRestaurantPage(),
+                      ),
+                    );
+                    if (result == true) {
+                      _loadRestaurants();
+                    }
+                  },
+                  heroTag: 'create_manual',
+                  icon: const Icon(Icons.edit),
+                  label: const Text('Create Manually'),
+                  backgroundColor: Colors.teal,
+                ),
+                const SizedBox(height: 12),
+                FloatingActionButton.extended(
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AdminUploadPage(),
+                      ),
+                    );
+                    if (result == true) {
+                      _loadRestaurants();
+                    }
+                  },
+                  heroTag: 'upload_pdf',
+                  icon: const Icon(Icons.upload_file),
+                  label: const Text('Upload PDF'),
+                  backgroundColor: Colors.purple,
+                ),
+              ],
+            )
+          : null,
     );
   }
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      title: const Text('Select Restaurant',
-          style: TextStyle(fontWeight: FontWeight.bold)),
       flexibleSpace: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -615,17 +646,130 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
             end: Alignment.bottomRight,
           ),
         ),
-      ),
-      actions: [
-        IconButton(
-          icon: Icon(showFilters ? Icons.filter_list_off : Icons.filter_list),
-          onPressed: () {
-            setState(() {
-              showFilters = !showFilters;
-            });
-          },
+        child: SafeArea(
+          child: Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 1200),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(left: 16.0),
+                      child: Text(
+                        'Select Restaurant',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(showFilters ? Icons.filter_list_off : Icons.filter_list),
+                        onPressed: () {
+                          setState(() {
+                            showFilters = !showFilters;
+                          });
+                        },
+                      ),
+                      _authService.isLoggedIn
+                          ? PopupMenuButton<String>(
+                              icon: CircleAvatar(
+                                backgroundColor: Colors.white,
+                                child: _authService.userAvatarUrl != null
+                                    ? ClipOval(
+                                        child: Image.network(
+                                          _authService.userAvatarUrl!,
+                                          width: 32,
+                                          height: 32,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return const Icon(Icons.person, color: Colors.teal);
+                                          },
+                                        ),
+                                      )
+                                    : const Icon(Icons.person, color: Colors.teal),
+                              ),
+                              onSelected: (value) async {
+                                if (value == 'logout') {
+                                  await _authService.signOut();
+                                  setState(() {});
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Signed out successfully')),
+                                    );
+                                  }
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                PopupMenuItem<String>(
+                                  enabled: false,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _authService.userName ?? 'User',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Text(
+                                        _authService.userEmail ?? '',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuDivider(),
+                                const PopupMenuItem<String>(
+                                  value: 'logout',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.logout),
+                                      SizedBox(width: 8),
+                                      Text('Sign Out'),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            )
+                          : IconButton(
+                              icon: const Icon(Icons.login),
+                              tooltip: 'Sign In',
+                              onPressed: () async {
+                                final result = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const LoginPage(),
+                                  ),
+                                );
+                                if (result == true && mounted) {
+                                  setState(() {});
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Signed in successfully!'),
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
-      ],
+      ),
+      automaticallyImplyLeading: false,
     );
   }
 
@@ -747,6 +891,8 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
 
   Widget _buildRestaurantHeader(
       Restaurant restaurant, bool hasItems, Cart restaurantCart) {
+    final isOwner = _authService.currentUser?.id == restaurant.restaurantOwnerUuid;
+    
     return Row(
       children: [
         Expanded(
@@ -759,6 +905,20 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
             ),
           ),
         ),
+        if (isOwner)
+          IconButton(
+            icon: const Icon(Icons.edit, color: Colors.teal),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditRestaurantPage(restaurant: restaurant),
+                ),
+              );
+              _loadRestaurants(); // Reload to show any changes
+            },
+            tooltip: 'Edit Restaurant',
+          ),
         if (hasItems) _buildCartBadge(restaurantCart),
         if (restaurant.delivers) _buildDeliveryBadge(),
       ],

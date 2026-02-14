@@ -1,5 +1,8 @@
 -- Supabase seed for digital restaurant menu
 -- Run this in the Supabase SQL editor (or via psql) to create tables and insert example restaurants.
+-- 
+-- Restaurant ownership: Each restaurant has a restaurant_owner_uuid that links to auth.users
+-- Restaurant owners can edit their own restaurants via Row Level Security policies
 
 BEGIN;
 
@@ -24,6 +27,7 @@ CREATE TABLE restaurants (
   payment_methods text[],
   latitude numeric(10, 8),
   longitude numeric(11, 8),
+  restaurant_owner_uuid uuid REFERENCES auth.users(id) ON DELETE SET NULL,
   created_at timestamptz DEFAULT now()
 );
 
@@ -58,7 +62,7 @@ CREATE TABLE item_variants (
 );
 
 -- Insert example restaurants in Büren, Geseke, Brilon, and Salzkotten
-INSERT INTO restaurants (id, name, address, email, phone, description, image_url, cuisine_type, delivers, opening_hours, payment_methods, latitude, longitude) VALUES
+INSERT INTO restaurants (id, name, address, email, phone, description, image_url, cuisine_type, delivers, opening_hours, payment_methods, latitude, longitude, restaurant_owner_uuid) VALUES
   (1, 'Golden Dragon', 'Königstraße 12, 33142 Büren, Germany', 'info@goldendragon.de', '+49 2951 123456', 
    'Authentic Chinese cuisine with traditional flavors',
    'https://images.unsplash.com/photo-1525755662778-989d0524087e?w=800',
@@ -66,7 +70,7 @@ INSERT INTO restaurants (id, name, address, email, phone, description, image_url
    true,
    '{"monday": "11:00-22:00", "tuesday": "11:00-22:00", "wednesday": "11:00-22:00", "thursday": "11:00-22:00", "friday": "11:00-23:00", "saturday": "12:00-23:00", "sunday": "12:00-22:00"}'::jsonb,
    ARRAY['Cash', 'Credit Card', 'Debit Card', 'PayPal'],
-   51.551667, 8.559722),
+   51.551667, 8.559722, '2f60fdc0-6bf2-4200-8ea4-6a5612c9ade2'),
   
   (2, 'La Bella Vita', 'Bachstraße 8, 59590 Geseke, Germany', 'contact@labellavita.de', '+49 2942 234567', 
    'Traditional Italian restaurant serving homemade pasta and pizza',
@@ -75,7 +79,7 @@ INSERT INTO restaurants (id, name, address, email, phone, description, image_url
    true,
    '{"monday": "12:00-23:00", "tuesday": "12:00-23:00", "wednesday": "12:00-23:00", "thursday": "12:00-23:00", "friday": "12:00-00:00", "saturday": "12:00-00:00", "sunday": "Closed"}'::jsonb,
    ARRAY['Cash', 'Credit Card', 'Debit Card', 'Apple Pay', 'Google Pay'],
-   51.640556, 8.516389),
+   51.640556, 8.516389, '2f60fdc0-6bf2-4200-8ea4-6a5612c9ade2'),
   
   (3, 'Taverna Olympia', 'Marktplatz 5, 59929 Brilon, Germany', 'hello@tavernaolympia.de', '+49 2961 345678', 
    'Greek taverna with Mediterranean specialties',
@@ -84,7 +88,7 @@ INSERT INTO restaurants (id, name, address, email, phone, description, image_url
    false,
    '{"monday": "17:00-23:00", "tuesday": "17:00-23:00", "wednesday": "Closed", "thursday": "17:00-23:00", "friday": "17:00-00:00", "saturday": "12:00-00:00", "sunday": "12:00-22:00"}'::jsonb,
    ARRAY['Cash', 'Credit Card', 'EC Card'],
-   51.393889, 8.570278),
+   51.393889, 8.570278, '2f60fdc0-6bf2-4200-8ea4-6a5612c9ade2'),
   
   (4, 'Sushi Heaven', 'Lange Straße 34, 33154 Salzkotten, Germany', 'info@sushiheaven.de', '+49 5258 456789', 
    'Premium Japanese sushi bar with fresh daily selections',
@@ -93,7 +97,7 @@ INSERT INTO restaurants (id, name, address, email, phone, description, image_url
    true,
    '{"monday": "11:30-22:00", "tuesday": "11:30-22:00", "wednesday": "11:30-22:00", "thursday": "11:30-22:00", "friday": "11:30-23:00", "saturday": "12:00-23:00", "sunday": "12:00-21:00"}'::jsonb,
    ARRAY['Cash', 'Credit Card', 'Debit Card', 'Apple Pay'],
-   51.672222, 8.605833),
+   51.672222, 8.605833, '2f60fdc0-6bf2-4200-8ea4-6a5612c9ade2'),
   
   (5, 'Curry Palace', 'Hauptstraße 45, 33142 Büren, Germany', 'info@currypalace.de', '+49 2951 567890', 
    'Authentic Indian cuisine with traditional tandoori specialties',
@@ -102,7 +106,7 @@ INSERT INTO restaurants (id, name, address, email, phone, description, image_url
    true,
    '{"monday": "12:00-23:00", "tuesday": "12:00-23:00", "wednesday": "12:00-23:00", "thursday": "12:00-23:00", "friday": "12:00-00:00", "saturday": "13:00-00:00", "sunday": "13:00-23:00"}'::jsonb,
    ARRAY['Cash', 'Credit Card', 'PayPal', 'Google Pay'],
-   51.548889, 8.563611),
+   51.548889, 8.563611, '2f60fdc0-6bf2-4200-8ea4-6a5612c9ade2'),
   
   (6, 'Le Bistro Parisien', 'Bürener Straße 22, 59590 Geseke, Germany', 'contact@lebistro.de', '+49 2942 678901', 
    'Classic French bistro with elegant dining experience',
@@ -111,7 +115,7 @@ INSERT INTO restaurants (id, name, address, email, phone, description, image_url
    false,
    '{"monday": "Closed", "tuesday": "18:00-23:00", "wednesday": "18:00-23:00", "thursday": "18:00-23:00", "friday": "18:00-00:00", "saturday": "18:00-00:00", "sunday": "12:00-22:00"}'::jsonb,
    ARRAY['Cash', 'Credit Card', 'Debit Card'],
-   51.638333, 8.520556),
+   51.638333, 8.520556, '2f60fdc0-6bf2-4200-8ea4-6a5612c9ade2'),
   
   (7, 'Taco Fiesta', 'Steinweg 18, 59929 Brilon, Germany', 'hola@tacofiesta.de', '+49 2961 789012', 
    'Vibrant Mexican restaurant with authentic street food',
@@ -120,7 +124,7 @@ INSERT INTO restaurants (id, name, address, email, phone, description, image_url
    true,
    '{"monday": "11:00-22:00", "tuesday": "11:00-22:00", "wednesday": "11:00-22:00", "thursday": "11:00-22:00", "friday": "11:00-23:00", "saturday": "12:00-23:00", "sunday": "12:00-22:00"}'::jsonb,
    ARRAY['Cash', 'Credit Card', 'Apple Pay', 'Google Pay'],
-   51.396111, 8.567222),
+   51.396111, 8.567222, '2f60fdc0-6bf2-4200-8ea4-6a5612c9ade2'),
   
   (8, 'Saigon Street Kitchen', 'Vielser Straße 15, 33154 Salzkotten, Germany', 'info@saigonstreet.de', '+49 5258 890123', 
    'Vietnamese street food with modern twist',
@@ -129,7 +133,7 @@ INSERT INTO restaurants (id, name, address, email, phone, description, image_url
    true,
    '{"monday": "11:00-22:00", "tuesday": "11:00-22:00", "wednesday": "11:00-22:00", "thursday": "11:00-22:00", "friday": "11:00-23:00", "saturday": "12:00-23:00", "sunday": "12:00-22:00"}'::jsonb,
    ARRAY['Cash', 'Credit Card', 'Debit Card', 'PayPal'],
-   51.669444, 8.611667),
+   51.669444, 8.611667, '2f60fdc0-6bf2-4200-8ea4-6a5612c9ade2'),
   
   (9, 'The American Diner', 'Bahnhofstraße 28, 33142 Büren, Germany', 'info@americandiner.de', '+49 2951 901234', 
    'Classic American diner serving burgers, shakes, and comfort food',
@@ -138,7 +142,7 @@ INSERT INTO restaurants (id, name, address, email, phone, description, image_url
    true,
    '{"monday": "10:00-23:00", "tuesday": "10:00-23:00", "wednesday": "10:00-23:00", "thursday": "10:00-23:00", "friday": "10:00-00:00", "saturday": "10:00-00:00", "sunday": "10:00-23:00"}'::jsonb,
    ARRAY['Cash', 'Credit Card', 'Debit Card', 'Apple Pay', 'Google Pay'],
-   51.545278, 8.565000),
+   51.545278, 8.565000, '2f60fdc0-6bf2-4200-8ea4-6a5612c9ade2'),
   
   (10, 'Istanbul Grill', 'Erwitter Straße 42, 59590 Geseke, Germany', 'info@istanbulgrill.de', '+49 2942 012345', 
    'Traditional Turkish grill house with fresh kebabs',
@@ -147,7 +151,7 @@ INSERT INTO restaurants (id, name, address, email, phone, description, image_url
    true,
    '{"monday": "10:00-23:00", "tuesday": "10:00-23:00", "wednesday": "10:00-23:00", "thursday": "10:00-23:00", "friday": "10:00-01:00", "saturday": "10:00-01:00", "sunday": "11:00-23:00"}'::jsonb,
    ARRAY['Cash', 'Credit Card', 'EC Card'],
-   51.635556, 8.523333),
+   51.635556, 8.523333, '2f60fdc0-6bf2-4200-8ea4-6a5612c9ade2'),
   
   (11, 'Thai Orchid', 'Derkere Straße 12, 59929 Brilon, Germany', 'hello@thaiorchid.de', '+49 2961 123450', 
    'Authentic Thai restaurant with aromatic curries and pad thai',
@@ -156,7 +160,7 @@ INSERT INTO restaurants (id, name, address, email, phone, description, image_url
    true,
    '{"monday": "12:00-22:00", "tuesday": "12:00-22:00", "wednesday": "12:00-22:00", "thursday": "12:00-22:00", "friday": "12:00-23:00", "saturday": "12:00-23:00", "sunday": "13:00-22:00"}'::jsonb,
    ARRAY['Cash', 'Credit Card', 'PayPal'],
-   51.390000, 8.573889),
+   51.390000, 8.573889, '2f60fdc0-6bf2-4200-8ea4-6a5612c9ade2'),
   
   (12, 'Seoul BBQ', 'Upsprunger Straße 8, 33154 Salzkotten, Germany', 'info@seoulbbq.de', '+49 5258 234561', 
    'Korean BBQ restaurant with table grills and banchan',
@@ -165,7 +169,7 @@ INSERT INTO restaurants (id, name, address, email, phone, description, image_url
    false,
    '{"monday": "Closed", "tuesday": "17:00-23:00", "wednesday": "17:00-23:00", "thursday": "17:00-23:00", "friday": "17:00-00:00", "saturday": "12:00-00:00", "sunday": "12:00-23:00"}'::jsonb,
    ARRAY['Cash', 'Credit Card', 'Debit Card', 'Apple Pay'],
-   51.665833, 8.608611),
+   51.665833, 8.608611, '2f60fdc0-6bf2-4200-8ea4-6a5612c9ade2'),
   
   (13, 'Tapas y Vino', 'Alme 7, 33142 Büren, Germany', 'hola@tapasyvino.de', '+49 2951 345672', 
    'Spanish tapas bar with extensive wine selection',
@@ -174,7 +178,7 @@ INSERT INTO restaurants (id, name, address, email, phone, description, image_url
    false,
    '{"monday": "Closed", "tuesday": "17:00-00:00", "wednesday": "17:00-00:00", "thursday": "17:00-00:00", "friday": "17:00-01:00", "saturday": "12:00-01:00", "sunday": "12:00-23:00"}'::jsonb,
    ARRAY['Cash', 'Credit Card', 'Apple Pay'],
-   51.553056, 8.556944)
+   51.553056, 8.556944, '2f60fdc0-6bf2-4200-8ea4-6a5612c9ade2')
 ON CONFLICT (id) DO NOTHING;
 
 -- Categories for Golden Dragon (Chinese)
@@ -616,5 +620,87 @@ SELECT setval(pg_get_serial_sequence('restaurants','id'), COALESCE((SELECT MAX(i
 SELECT setval(pg_get_serial_sequence('categories','id'), COALESCE((SELECT MAX(id) FROM categories), 1));
 SELECT setval(pg_get_serial_sequence('items','id'), COALESCE((SELECT MAX(id) FROM items), 1));
 SELECT setval(pg_get_serial_sequence('item_variants','id'), COALESCE((SELECT MAX(id) FROM item_variants), 1));
+
+-- Enable Row Level Security on restaurants table
+ALTER TABLE restaurants ENABLE ROW LEVEL SECURITY;
+
+-- Policy: Anyone can view all restaurants (read access)
+CREATE POLICY "Allow public read access to restaurants"
+  ON restaurants
+  FOR SELECT
+  USING (true);
+
+-- Policy: Authenticated users can insert new restaurants (they become the owner)
+CREATE POLICY "Allow authenticated users to insert restaurants"
+  ON restaurants
+  FOR INSERT
+  WITH CHECK (auth.uid() IS NOT NULL AND restaurant_owner_uuid = auth.uid());
+
+-- Policy: Restaurant owners can update their own restaurants
+CREATE POLICY "Allow owners to update their restaurants"
+  ON restaurants
+  FOR UPDATE
+  USING (restaurant_owner_uuid = auth.uid())
+  WITH CHECK (restaurant_owner_uuid = auth.uid());
+
+-- Policy: Restaurant owners can delete their own restaurants
+CREATE POLICY "Allow owners to delete their restaurants"
+  ON restaurants
+  FOR DELETE
+  USING (restaurant_owner_uuid = auth.uid());
+
+-- Enable RLS on related tables
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE item_variants ENABLE ROW LEVEL SECURITY;
+
+-- Policy: Anyone can read categories, items, and variants
+CREATE POLICY "Allow public read access to categories"
+  ON categories FOR SELECT USING (true);
+
+CREATE POLICY "Allow public read access to items"
+  ON items FOR SELECT USING (true);
+
+CREATE POLICY "Allow public read access to item_variants"
+  ON item_variants FOR SELECT USING (true);
+
+-- Policy: Restaurant owners can manage their restaurant's categories
+CREATE POLICY "Allow owners to manage categories"
+  ON categories
+  FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM restaurants
+      WHERE restaurants.id = categories.restaurant_id
+      AND restaurants.restaurant_owner_uuid = auth.uid()
+    )
+  );
+
+-- Policy: Restaurant owners can manage their items (through categories)
+CREATE POLICY "Allow owners to manage items"
+  ON items
+  FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM categories
+      JOIN restaurants ON restaurants.id = categories.restaurant_id
+      WHERE categories.id = items.category_id
+      AND restaurants.restaurant_owner_uuid = auth.uid()
+    )
+  );
+
+-- Policy: Restaurant owners can manage their item variants
+CREATE POLICY "Allow owners to manage item_variants"
+  ON item_variants
+  FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM items
+      JOIN categories ON categories.id = items.category_id
+      JOIN restaurants ON restaurants.id = categories.restaurant_id
+      WHERE items.id = item_variants.item_id
+      AND restaurants.restaurant_owner_uuid = auth.uid()
+    )
+  );
 
 COMMIT;

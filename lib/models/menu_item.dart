@@ -11,7 +11,7 @@ class MenuItem {
   final String name;
   final double? price;
   final String? description;
-  final bool available;
+  bool available; // Made mutable for toggling availability
   final bool hasVariants;
   final List<ItemVariant> variants;
 

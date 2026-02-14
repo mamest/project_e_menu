@@ -426,89 +426,114 @@ class _MenuPageState extends State<MenuPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(widget.restaurant.name),
-            Text(
-              widget.restaurant.address,
-              style: const TextStyle(fontSize: 12),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.picture_as_pdf),
-            onPressed: () async {
-              if (categories.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Menu is still loading...'),
-                    duration: Duration(seconds: 2),
+        backgroundColor: Colors.teal,
+        flexibleSpace: SafeArea(
+          child: Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 1200),
+              child: Row(
+                children: [
+                  const BackButton(color: Colors.white),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          widget.restaurant.name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          widget.restaurant.address,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                );
-                return;
-              }
+                  IconButton(
+                    icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
+                    onPressed: () async {
+                      if (categories.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Menu is still loading...'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                        return;
+                      }
 
-              try {
-                await PdfService.generateMenuPdf(widget.restaurant, categories);
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error generating PDF: $e'),
-                      backgroundColor: Colors.red,
-                      duration: const Duration(seconds: 3),
-                    ),
-                  );
-                }
-              }
-            },
-            tooltip: 'Download Menu PDF',
-          ),
-          IconButton(
-            icon: const Icon(Icons.info_outline),
-            onPressed: () {
-              _showRestaurantInfo(context);
-            },
-          ),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.shopping_cart),
-                onPressed: () {
-                  _showCart(context);
-                },
-              ),
-              if (cart.itemCount > 0)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 20,
-                      minHeight: 20,
-                    ),
-                    child: Text(
-                      '${cart.itemCount}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
+                      try {
+                        await PdfService.generateMenuPdf(widget.restaurant, categories);
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error generating PDF: $e'),
+                              backgroundColor: Colors.red,
+                              duration: const Duration(seconds: 3),
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    tooltip: 'Download Menu PDF',
                   ),
-                ),
-            ],
+                  IconButton(
+                    icon: const Icon(Icons.info_outline, color: Colors.white),
+                    onPressed: () {
+                      _showRestaurantInfo(context);
+                    },
+                  ),
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.shopping_cart, color: Colors.white),
+                        onPressed: () {
+                          _showCart(context);
+                        },
+                      ),
+                      if (cart.itemCount > 0)
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 20,
+                              minHeight: 20,
+                            ),
+                            child: Text(
+                              '${cart.itemCount}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
-        ],
+        ),
+        automaticallyImplyLeading: false,
       ),
       body: Center(
         child: Container(

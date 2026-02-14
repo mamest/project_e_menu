@@ -14,6 +14,7 @@ class Restaurant {
   final List<String>? paymentMethods;
   final double? latitude;
   final double? longitude;
+  final String? restaurantOwnerUuid;
 
   Restaurant({
     required this.id,
@@ -29,6 +30,7 @@ class Restaurant {
     this.paymentMethods,
     this.latitude,
     this.longitude,
+    this.restaurantOwnerUuid,
   });
 
   factory Restaurant.fromJson(Map<String, dynamic> json) {
@@ -52,6 +54,7 @@ class Restaurant {
       longitude: json['longitude'] != null
           ? (json['longitude'] as num).toDouble()
           : null,
+      restaurantOwnerUuid: json['restaurant_owner_uuid'] as String?,
     );
   }
 
