@@ -1,6 +1,7 @@
 class CartItem {
   final int itemId;
   final String itemName;
+  final String? itemNumber;
   final int? variantId;
   final String? variantName;
   final double price;
@@ -9,6 +10,7 @@ class CartItem {
   CartItem({
     required this.itemId,
     required this.itemName,
+    this.itemNumber,
     this.variantId,
     this.variantName,
     required this.price,

@@ -16,9 +16,10 @@ class UnsplashService {
       }
 
       // Build search query based on cuisine type
-      String query = 'restaurant food';
+      // Always start with 'food' to ensure food-related images
+      String query = 'food restaurant';
       if (cuisineType != null && cuisineType.isNotEmpty) {
-        query = '$cuisineType food restaurant';
+        query = 'food $cuisineType restaurant';
       }
 
       final encodedQuery = Uri.encodeComponent(query);

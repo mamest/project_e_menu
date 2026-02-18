@@ -28,12 +28,40 @@ class _MenuPageState extends State<MenuPage> {
     _loadMenu();
   }
 
+  // Natural sort comparison for item numbers (handles "1", "2", "10", "1a", "2b" etc.)
+  int _compareItemNumbers(String? a, String? b) {
+    if (a == null && b == null) return 0;
+    if (a == null) return 1;
+    if (b == null) return -1;
+
+    // Extract numeric prefix and suffix
+    final aMatch = RegExp(r'^(\d+)(.*)$').firstMatch(a);
+    final bMatch = RegExp(r'^(\d+)(.*)$').firstMatch(b);
+
+    if (aMatch != null && bMatch != null) {
+      final aNum = int.parse(aMatch.group(1)!);
+      final bNum = int.parse(bMatch.group(1)!);
+      
+      if (aNum != bNum) {
+        return aNum.compareTo(bNum);
+      }
+      
+      // If numbers are equal, compare suffixes
+      final aSuffix = aMatch.group(2) ?? '';
+      final bSuffix = bMatch.group(2) ?? '';
+      return aSuffix.compareTo(bSuffix);
+    }
+
+    // Fallback to string comparison
+    return a.compareTo(b);
+  }
+
   Future<void> _loadMenu() async {
     try {
       final response = await Supabase.instance.client
           .from('categories')
           .select(
-              'id, name, display_order, items(id, name, price, description, available, has_variants, item_variants(id, name, price, display_order))')
+              'id, name, display_order, items(id, name, item_number, price, description, available, has_variants, item_variants(id, name, price, display_order))')
           .eq('restaurant_id', widget.restaurant.id)
           .order('display_order');
 
@@ -50,6 +78,8 @@ class _MenuPageState extends State<MenuPage> {
                 return MenuItem.fromJson(i as Map<String, dynamic>, variants);
               }).toList() ??
               [];
+          // Sort items by item_number
+          items.sort((a, b) => _compareItemNumbers(a.itemNumber, b.itemNumber));
           return Category(
             id: c['id'] as int,
             name: c['name'] as String,
@@ -57,8 +87,19 @@ class _MenuPageState extends State<MenuPage> {
           );
         }).toList();
 
+        // Filter out empty categories
+        final nonEmptyCats = cats.where((cat) => cat.items.isNotEmpty).toList();
+
+        // Sort categories by the minimum item_number in each category
+        nonEmptyCats.sort((a, b) {
+          // Get first (minimum) item number from each category
+          final aMinNum = a.items.isNotEmpty ? a.items.first.itemNumber : null;
+          final bMinNum = b.items.isNotEmpty ? b.items.first.itemNumber : null;
+          return _compareItemNumbers(aMinNum, bMinNum);
+        });
+
         setState(() {
-          categories = cats;
+          categories = nonEmptyCats;
           loading = false;
         });
       }
@@ -293,11 +334,36 @@ class _MenuPageState extends State<MenuPage> {
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
-                                              Text(
-                                                cartItem.itemName,
-                                                style: const TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 16),
+                                              Row(
+                                                children: [
+                                                  if (cartItem.itemNumber != null && cartItem.itemNumber!.isNotEmpty)
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                      margin: const EdgeInsets.only(right: 6),
+                                                      decoration: BoxDecoration(
+                                                        gradient: LinearGradient(
+                                                          colors: [Colors.purple.shade400, Colors.deepPurple.shade500],
+                                                        ),
+                                                        borderRadius: BorderRadius.circular(6),
+                                                      ),
+                                                      child: Text(
+                                                        cartItem.itemNumber!,
+                                                        style: const TextStyle(
+                                                          fontSize: 11,
+                                                          fontWeight: FontWeight.w700,
+                                                          color: Colors.white,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  Expanded(
+                                                    child: Text(
+                                                      cartItem.itemName,
+                                                      style: const TextStyle(
+                                                          fontWeight: FontWeight.bold,
+                                                          fontSize: 16),
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                               if (cartItem.variantName != null)
                                                 Text(
@@ -307,12 +373,21 @@ class _MenuPageState extends State<MenuPage> {
                                                       fontSize: 14),
                                                 ),
                                               const SizedBox(height: 4),
-                                              Text(
-                                                '€${cartItem.price.toStringAsFixed(2)}',
-                                                style: const TextStyle(
-                                                    color: Colors.teal,
-                                                    fontWeight:
-                                                        FontWeight.bold),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    colors: [Colors.green.shade400, Colors.teal.shade500],
+                                                  ),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: Text(
+                                                  '€${cartItem.price.toStringAsFixed(2)}',
+                                                  style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontWeight:
+                                                          FontWeight.bold),
+                                                ),
                                               ),
                                             ],
                                           ),
@@ -384,31 +459,50 @@ class _MenuPageState extends State<MenuPage> {
                             ),
                             Text(
                               '€${cart.total.toStringAsFixed(2)}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.teal),
+                                  foreground: Paint()
+                                    ..shader = LinearGradient(
+                                      colors: [Colors.green.shade600, Colors.teal.shade600],
+                                    ).createShader(const Rect.fromLTWH(0.0, 0.0, 200.0, 70.0))),
                             ),
                           ],
                         ),
                       ),
                       SizedBox(
                         width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text(
-                                      'Checkout functionality coming soon!')),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            backgroundColor: Colors.teal,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Colors.deepPurple.shade400, Colors.purple.shade500],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.purple.withOpacity(0.4),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                          child: const Text('Proceed to Checkout',
-                              style: TextStyle(fontSize: 16)),
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text(
+                                        'Checkout functionality coming soon!')),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                            ),
+                            child: const Text('Proceed to Checkout',
+                                style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+                          ),
                         ),
                       ),
                     ],
@@ -426,109 +520,126 @@ class _MenuPageState extends State<MenuPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.teal,
-        flexibleSpace: SafeArea(
-          child: Center(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 1200),
-              child: Row(
-                children: [
-                  const BackButton(color: Colors.white),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          widget.restaurant.name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w500,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.deepPurple.shade600, Colors.deepPurple.shade400, Colors.purpleAccent],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: SafeArea(
+            child: Center(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: Row(
+                  children: [
+                    const BackButton(color: Colors.white),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            widget.restaurant.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
-                        Text(
-                          widget.restaurant.address,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.white70,
+                          Text(
+                            widget.restaurant.address,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.white70,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
-                    onPressed: () async {
-                      if (categories.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Menu is still loading...'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                        return;
-                      }
-
-                      try {
-                        await PdfService.generateMenuPdf(widget.restaurant, categories);
-                      } catch (e) {
-                        if (context.mounted) {
+                    IconButton(
+                      icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
+                      onPressed: () async {
+                        if (categories.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Error generating PDF: $e'),
-                              backgroundColor: Colors.red,
-                              duration: const Duration(seconds: 3),
+                            const SnackBar(
+                              content: Text('Menu is still loading...'),
+                              duration: Duration(seconds: 2),
                             ),
                           );
+                          return;
                         }
-                      }
-                    },
-                    tooltip: 'Download Menu PDF',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.info_outline, color: Colors.white),
-                    onPressed: () {
-                      _showRestaurantInfo(context);
-                    },
-                  ),
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.shopping_cart, color: Colors.white),
-                        onPressed: () {
-                          _showCart(context);
-                        },
-                      ),
-                      if (cart.itemCount > 0)
-                        Positioned(
-                          right: 8,
-                          top: 8,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 20,
-                              minHeight: 20,
-                            ),
-                            child: Text(
-                              '${cart.itemCount}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
+
+                        try {
+                          await PdfService.generateMenuPdf(widget.restaurant, categories);
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error generating PDF: $e'),
+                                backgroundColor: Colors.red,
+                                duration: const Duration(seconds: 3),
                               ),
-                              textAlign: TextAlign.center,
+                            );
+                          }
+                        }
+                      },
+                      tooltip: 'Download Menu PDF',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.info_outline, color: Colors.white),
+                      onPressed: () {
+                        _showRestaurantInfo(context);
+                      },
+                    ),
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.shopping_cart, color: Colors.white),
+                          onPressed: () {
+                            _showCart(context);
+                          },
+                        ),
+                        if (cart.itemCount > 0)
+                          Positioned(
+                            right: 8,
+                            top: 8,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [Colors.orange.shade400, Colors.deepOrange.shade500],
+                                ),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.orange.withOpacity(0.6),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 20,
+                                minHeight: 20,
+                              ),
+                              child: Text(
+                                '${cart.itemCount}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
                             ),
                           ),
-                        ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -538,6 +649,17 @@ class _MenuPageState extends State<MenuPage> {
       body: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 1200),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                const Color(0xFFF5F7FA),
+                Colors.purple.shade50.withOpacity(0.3),
+                Colors.blue.shade50.withOpacity(0.3),
+              ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
           child: loading
               ? const Center(child: CircularProgressIndicator())
               : errorMessage != null
@@ -549,19 +671,96 @@ class _MenuPageState extends State<MenuPage> {
                   : categories.isEmpty
                       ? const Center(child: Text('No menu items found'))
                       : ListView.builder(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
                           itemCount: categories.length,
                           itemBuilder: (context, idx) {
                         final cat = categories[idx];
-                        return ExpansionTile(
-                          initiallyExpanded: idx == 0,
-                          title: Text(
-                            cat.name,
-                            style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
+                        // Define gradient colors for each category
+                        final gradientColors = [
+                          [Colors.purple.shade400, Colors.deepPurple.shade500],
+                          [Colors.blue.shade400, Colors.indigo.shade500],
+                          [Colors.teal.shade400, Colors.cyan.shade500],
+                          [Colors.orange.shade400, Colors.deepOrange.shade500],
+                          [Colors.pink.shade400, Colors.red.shade500],
+                          [Colors.green.shade400, Colors.lightGreen.shade600],
+                        ];
+                        final colorSet = gradientColors[idx % gradientColors.length];
+                        
+                        return Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: LinearGradient(
+                              colors: [Colors.white, colorSet[0].withOpacity(0.05)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: colorSet[0].withOpacity(0.15),
+                                blurRadius: 6,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                           ),
-                          children: cat.items
-                              .where((item) => item.available)
-                              .map((item) {
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: ExpansionTile(
+                              initiallyExpanded: idx == 0,
+                              backgroundColor: Colors.transparent,
+                              collapsedBackgroundColor: Colors.transparent,
+                              tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                              title: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(colors: colorSet),
+                                      borderRadius: BorderRadius.circular(10),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: colorSet[1].withOpacity(0.4),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(Icons.restaurant_menu, color: Colors.white, size: 20),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      cat.name,
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w700,
+                                        foreground: Paint()
+                                          ..shader = LinearGradient(
+                                            colors: colorSet,
+                                          ).createShader(const Rect.fromLTWH(0.0, 0.0, 200.0, 70.0)),
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(colors: colorSet),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      '${cat.items.where((item) => item.available).length} items',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              children: cat.items
+                                  .where((item) => item.available)
+                                  .map((item) {
                             if (item.hasVariants && item.variants.isNotEmpty) {
                               // Item with variants (sizes)
                               return Column(
@@ -574,11 +773,41 @@ class _MenuPageState extends State<MenuPage> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          item.name,
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                              fontSize: 16),
+                                        Row(
+                                          children: [
+                                            if (item.itemNumber != null && item.itemNumber!.isNotEmpty)
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                margin: const EdgeInsets.only(right: 8),
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(colors: colorSet),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: colorSet[1].withOpacity(0.3),
+                                                      blurRadius: 3,
+                                                      offset: const Offset(0, 2),
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: Text(
+                                                  item.itemNumber!,
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                            Expanded(
+                                              child: Text(
+                                                item.name,
+                                                style: const TextStyle(
+                                                    fontWeight: FontWeight.w500,
+                                                    fontSize: 16),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                         if (item.description != null &&
                                             item.description!.isNotEmpty)
@@ -605,23 +834,37 @@ class _MenuPageState extends State<MenuPage> {
                                         trailing: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Text(
-                                              '€${variant.price.toStringAsFixed(2)}',
-                                              style: const TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.teal),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(colors: [Colors.green.shade400, Colors.teal.shade500]),
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: Text(
+                                                '€${variant.price.toStringAsFixed(2)}',
+                                                style: const TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white),
+                                              ),
                                             ),
                                             const SizedBox(width: 8),
-                                            IconButton(
-                                              icon: const Icon(
-                                                  Icons.add_shopping_cart,
-                                                  size: 20),
-                                              onPressed: () {
+                                            Container(
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(colors: colorSet),
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: IconButton(
+                                                icon: const Icon(
+                                                    Icons.add_shopping_cart,
+                                                    size: 20,
+                                                    color: Colors.white),
+                                                onPressed: () {
                                                 setState(() {
                                                   cart.addItem(CartItem(
                                                     itemId: item.id,
                                                     itemName: item.name,
+                                                    itemNumber: item.itemNumber,
                                                     variantId: variant.id,
                                                     variantName: variant.name,
                                                     price: variant.price,
@@ -639,10 +882,14 @@ class _MenuPageState extends State<MenuPage> {
                                                 );
                                               },
                                             ),
-                                          ],
-                                        ),
-                                      )),
-                                  const Divider(indent: 32, endIndent: 32),
+                                          ),
+                                        ],
+                                      ),
+                                    )),
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 32),
+                                    child: Divider(),
+                                  ),
                                 ],
                               );
                             } else {
@@ -650,9 +897,39 @@ class _MenuPageState extends State<MenuPage> {
                               return ListTile(
                                 contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 32, vertical: 8),
-                                title: Text(item.name,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w500)),
+                                title: Row(
+                                  children: [
+                                    if (item.itemNumber != null && item.itemNumber!.isNotEmpty)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        margin: const EdgeInsets.only(right: 8),
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(colors: colorSet),
+                                          borderRadius: BorderRadius.circular(8),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: colorSet[1].withOpacity(0.3),
+                                              blurRadius: 3,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Text(
+                                          item.itemNumber!,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    Expanded(
+                                      child: Text(item.name,
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.w500)),
+                                    ),
+                                  ],
+                                ),
                                 subtitle: item.description != null &&
                                         item.description!.isNotEmpty
                                     ? Text(item.description!)
@@ -661,38 +938,53 @@ class _MenuPageState extends State<MenuPage> {
                                     ? Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Text(
-                                            '€${item.price!.toStringAsFixed(2)}',
-                                            style: const TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.teal),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(colors: [Colors.green.shade400, Colors.teal.shade500]),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              '€${item.price!.toStringAsFixed(2)}',
+                                              style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white),
+                                            ),
                                           ),
                                           const SizedBox(width: 8),
-                                          IconButton(
-                                            icon: const Icon(
-                                                Icons.add_shopping_cart),
-                                            onPressed: () {
-                                              setState(() {
-                                                cart.addItem(CartItem(
-                                                  itemId: item.id,
-                                                  itemName: item.name,
-                                                  variantId: null,
-                                                  variantName: null,
-                                                  price: item.price!,
-                                                  quantity: 1,
-                                                ));
-                                              });
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                      '${item.name} added to cart'),
-                                                  duration: const Duration(
-                                                      seconds: 1),
-                                                ),
-                                              );
-                                            },
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(colors: colorSet),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: IconButton(
+                                              icon: const Icon(
+                                                  Icons.add_shopping_cart,
+                                                  color: Colors.white),
+                                              onPressed: () {
+                                                setState(() {
+                                                  cart.addItem(CartItem(
+                                                    itemId: item.id,
+                                                    itemName: item.name,
+                                                    itemNumber: item.itemNumber,
+                                                    variantId: null,
+                                                    variantName: null,
+                                                    price: item.price!,
+                                                    quantity: 1,
+                                                  ));
+                                                });
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                        '${item.name} added to cart'),
+                                                    duration: const Duration(
+                                                        seconds: 1),
+                                                  ),
+                                                );
+                                              },
+                                            ),
                                           ),
                                         ],
                                       )
@@ -700,6 +992,8 @@ class _MenuPageState extends State<MenuPage> {
                               );
                             }
                           }).toList(),
+                            ),
+                          ),
                         );
                       },
                     ),

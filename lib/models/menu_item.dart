@@ -9,6 +9,7 @@ class Category {
 class MenuItem {
   final int id;
   final String name;
+  final String? itemNumber;
   final double? price;
   final String? description;
   bool available; // Made mutable for toggling availability
@@ -18,6 +19,7 @@ class MenuItem {
   MenuItem({
     required this.id,
     required this.name,
+    this.itemNumber,
     this.price,
     this.description,
     this.available = true,
@@ -30,6 +32,7 @@ class MenuItem {
     return MenuItem(
       id: json['id'] as int,
       name: json['name'] as String,
+      itemNumber: json['item_number'] as String?,
       price: json['price'] != null ? (json['price'] as num).toDouble() : null,
       description: json['description'] as String?,
       available: json['available'] as bool? ?? true,

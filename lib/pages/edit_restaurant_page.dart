@@ -55,6 +55,34 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
     super.dispose();
   }
 
+  // Natural sort comparison for item numbers (handles "1", "2", "10", "1a", "2b" etc.)
+  int _compareItemNumbers(String? a, String? b) {
+    if (a == null && b == null) return 0;
+    if (a == null) return 1;
+    if (b == null) return -1;
+
+    // Extract numeric prefix and suffix
+    final aMatch = RegExp(r'^(\d+)(.*)$').firstMatch(a);
+    final bMatch = RegExp(r'^(\d+)(.*)$').firstMatch(b);
+
+    if (aMatch != null && bMatch != null) {
+      final aNum = int.parse(aMatch.group(1)!);
+      final bNum = int.parse(bMatch.group(1)!);
+      
+      if (aNum != bNum) {
+        return aNum.compareTo(bNum);
+      }
+      
+      // If numbers are equal, compare suffixes
+      final aSuffix = aMatch.group(2) ?? '';
+      final bSuffix = bMatch.group(2) ?? '';
+      return aSuffix.compareTo(bSuffix);
+    }
+
+    // Fallback to string comparison
+    return a.compareTo(b);
+  }
+
   Future<void> _loadMenuData() async {
     try {
       // Load categories
@@ -69,7 +97,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
         // Load items for this category
         final itemsData = await _supabase
             .from('items')
-            .select('id, name, price, description, has_variants, available')
+            .select('id, name, item_number, price, description, has_variants, available')
             .eq('category_id', catData['id'])
             .order('id');
 
@@ -77,12 +105,15 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
           return MenuItem(
             id: itemData['id'] as int,
             name: itemData['name'] as String,
+            itemNumber: itemData['item_number'] as String?,
             price: itemData['price'] != null ? (itemData['price'] as num).toDouble() : null,
             description: itemData['description'] as String?,
             hasVariants: itemData['has_variants'] as bool? ?? false,
             available: itemData['available'] as bool? ?? true,
           );
         }).toList();
+        // Sort items by item_number
+        items.sort((a, b) => _compareItemNumbers(a.itemNumber, b.itemNumber));
 
         categories.add(MenuCategory(
           id: catData['id'] as int,
@@ -203,6 +234,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
 
   Future<void> _addItem(MenuCategory category) async {
     final nameController = TextEditingController();
+    final itemNumberController = TextEditingController();
     final priceController = TextEditingController();
     final descController = TextEditingController();
 
@@ -214,6 +246,14 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              TextField(
+                controller: itemNumberController,
+                decoration: const InputDecoration(
+                  labelText: 'Item Number',
+                  helperText: 'e.g., 1, 2a, 3b',
+                ),
+              ),
+              const SizedBox(height: 8),
               TextField(
                 controller: nameController,
                 decoration: const InputDecoration(labelText: 'Item Name'),
@@ -255,6 +295,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
         final response = await _supabase.from('items').insert({
           'category_id': category.id,
           'name': nameController.text,
+          'item_number': itemNumberController.text.isEmpty ? null : itemNumberController.text,
           'price': price,
           'description': descController.text.isEmpty ? null : descController.text,
           'available': true,
@@ -265,6 +306,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
           category.items.add(MenuItem(
             id: response['id'],
             name: response['name'],
+            itemNumber: response['item_number'] as String?,
             price: response['price']?.toDouble(),
             description: response['description'],
             available: response['available'] ?? true,
@@ -429,6 +471,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
 
   Future<void> _editItem(MenuCategory category, MenuItem item) async {
     final nameController = TextEditingController(text: item.name);
+    final itemNumberController = TextEditingController(text: item.itemNumber ?? '');
     final priceController = TextEditingController(
       text: item.price?.toStringAsFixed(2) ?? '',
     );
@@ -442,6 +485,14 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              TextField(
+                controller: itemNumberController,
+                decoration: const InputDecoration(
+                  labelText: 'Item Number',
+                  helperText: 'e.g., 1, 2a, 3b',
+                ),
+              ),
+              const SizedBox(height: 8),
               TextField(
                 controller: nameController,
                 decoration: const InputDecoration(labelText: 'Item Name'),
@@ -485,6 +536,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
         
         await _supabase.from('items').update({
           'name': nameController.text,
+          'item_number': itemNumberController.text.isEmpty ? null : itemNumberController.text,
           'price': price,
           'description': descController.text.isEmpty ? null : descController.text,
         }).eq('id', item.id);
@@ -494,6 +546,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
           category.items[index] = MenuItem(
             id: item.id,
             name: nameController.text,
+            itemNumber: itemNumberController.text.isEmpty ? null : itemNumberController.text,
             price: price,
             description: descController.text.isEmpty ? null : descController.text,
             available: item.available,
@@ -814,7 +867,29 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
                                     onChanged: (_) => _toggleItemAvailability(item),
                                     activeColor: Colors.teal,
                                   ),
-                                  title: Text(item.name),
+                                  title: Row(
+                                    children: [
+                                      if (item.itemNumber != null && item.itemNumber!.isNotEmpty)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          margin: const EdgeInsets.only(right: 6),
+                                          decoration: BoxDecoration(
+                                            color: Colors.teal.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(color: Colors.teal.withOpacity(0.3)),
+                                          ),
+                                          child: Text(
+                                            item.itemNumber!,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.teal[700],
+                                            ),
+                                          ),
+                                        ),
+                                      Expanded(child: Text(item.name)),
+                                    ],
+                                  ),
                                   subtitle: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [

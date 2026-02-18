@@ -27,23 +27,41 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Digital Menu',
       theme: ThemeData(
-        primarySwatch: Colors.teal,
+        primarySwatch: Colors.deepPurple,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.teal,
+          seedColor: Colors.deepPurple,
           brightness: Brightness.light,
+          primary: Colors.deepPurple,
+          secondary: Colors.orangeAccent,
+          tertiary: Colors.teal,
         ),
-        scaffoldBackgroundColor: Colors.grey[50],
+        scaffoldBackgroundColor: const Color(0xFFF5F7FA),
         cardTheme: CardThemeData(
-          elevation: 3,
+          elevation: 8,
+          shadowColor: Colors.deepPurple.withOpacity(0.2),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(20),
           ),
         ),
         appBarTheme: const AppBarTheme(
           elevation: 0,
           centerTitle: false,
-          backgroundColor: Colors.teal,
+          backgroundColor: Colors.transparent,
           foregroundColor: Colors.white,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            elevation: 4,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        chipTheme: ChipThemeData(
+          backgroundColor: Colors.deepPurple.shade50,
+          labelStyle: const TextStyle(fontWeight: FontWeight.w500),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         ),
         useMaterial3: true,
       ),

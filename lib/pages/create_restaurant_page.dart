@@ -93,8 +93,10 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
 
   void _addItem(int categoryIndex) {
     setState(() {
+      final itemCount = _categories[categoryIndex].items.length + 1;
       _categories[categoryIndex].items.add(ItemData(
         name: 'New Item',
+        itemNumber: '$itemCount',
         price: 0.0,
         description: '',
       ));
@@ -110,6 +112,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
   void _editItem(int categoryIndex, int itemIndex) async {
     final item = _categories[categoryIndex].items[itemIndex];
     final nameController = TextEditingController(text: item.name);
+    final itemNumberController = TextEditingController(text: item.itemNumber);
     final priceController = TextEditingController(text: item.price.toStringAsFixed(2));
     final descController = TextEditingController(text: item.description);
 
@@ -121,6 +124,15 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              TextFormField(
+                controller: itemNumberController,
+                decoration: const InputDecoration(
+                  labelText: 'Item Number',
+                  border: OutlineInputBorder(),
+                  helperText: 'e.g., 1, 2a, 3b',
+                ),
+              ),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: nameController,
                 decoration: const InputDecoration(
@@ -165,15 +177,75 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
 
     if (result == true) {
       setState(() {
+        item.itemNumber = itemNumberController.text;
         item.name = nameController.text;
         item.price = double.tryParse(priceController.text) ?? 0.0;
         item.description = descController.text;
       });
     }
 
+    itemNumberController.dispose();
     nameController.dispose();
     priceController.dispose();
     descController.dispose();
+  }
+
+  /// Build a smart search query based on cuisine type and menu items
+  String _buildImageSearchQuery() {
+    final cuisineType = _cuisineTypeController.text.trim();
+    
+    // Common food keywords that help identify the type of food
+    final foodKeywords = <String>[
+      'pizza', 'pasta', 'burger', 'sushi', 'ramen', 'noodles',
+      'steak', 'seafood', 'fish', 'chicken', 'beef', 'pork',
+      'salad', 'soup', 'curry', 'rice', 'tacos', 'burrito',
+      'sandwich', 'dessert', 'cake', 'coffee', 'breakfast',
+      'pancake', 'waffle', 'barbecue', 'bbq', 'grill', 'vegetarian',
+      'vegan', 'dim sum', 'dumplings', 'tempura', 'teriyaki',
+      'lasagna', 'risotto', 'paella', 'tapas', 'schnitzel',
+      'kebab', 'falafel', 'hummus', 'pho', 'pad thai', 'biryani'
+    ];
+
+    // Collect keywords from menu items and categories
+    final foundKeywords = <String>{};
+    
+    for (var category in _categories) {
+      final categoryLower = category.name.toLowerCase();
+      
+      // Check category name for keywords
+      for (var keyword in foodKeywords) {
+        if (categoryLower.contains(keyword)) {
+          foundKeywords.add(keyword);
+        }
+      }
+      
+      // Check item names for keywords
+      for (var item in category.items) {
+        final itemLower = item.name.toLowerCase();
+        for (var keyword in foodKeywords) {
+          if (itemLower.contains(keyword)) {
+            foundKeywords.add(keyword);
+          }
+        }
+      }
+    }
+
+    // Build the search query
+    String query = 'restaurant food';
+    
+    if (cuisineType.isNotEmpty) {
+      query = '$cuisineType food';
+    }
+    
+    // Add up to 2 most relevant food keywords
+    if (foundKeywords.isNotEmpty) {
+      final keywords = foundKeywords.take(2).join(' ');
+      query = cuisineType.isNotEmpty 
+          ? '$cuisineType $keywords food' 
+          : '$keywords restaurant food';
+    }
+    
+    return query;
   }
 
   Future<void> _saveRestaurant() async {
@@ -224,13 +296,13 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
       final latitude = coordinates?['latitude'];
       final longitude = coordinates?['longitude'];
 
-      // Fetch restaurant image
-      final cuisineType = _cuisineTypeController.text.trim();
-      final imageUrl = await UnsplashService.getRestaurantImage(
-        cuisineType.isEmpty ? 'restaurant' : cuisineType,
-      );
+      // Fetch restaurant image based on cuisine type and menu items
+      final searchQuery = _buildImageSearchQuery();
+      print('Fetching image with query: $searchQuery');
+      final imageUrl = await UnsplashService.getRestaurantImage(searchQuery);
 
       // Insert restaurant
+      final cuisineType = _cuisineTypeController.text.trim();
       final restaurantResponse = await supabase
           .from('restaurants')
           .insert({
@@ -275,6 +347,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
           await supabase.from('items').insert({
             'category_id': categoryId,
             'name': item.name,
+            'item_number': item.itemNumber.trim().isEmpty ? null : item.itemNumber.trim(),
             'price': item.price,
             'description': item.description.isEmpty ? null : item.description,
             'available': true,
@@ -652,6 +725,24 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                                   return ListTile(
                                     title: Row(
                                       children: [
+                                        if (item.itemNumber.isNotEmpty)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                            margin: const EdgeInsets.only(right: 8),
+                                            decoration: BoxDecoration(
+                                              color: Colors.teal.withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(4),
+                                              border: Border.all(color: Colors.teal.withOpacity(0.3)),
+                                            ),
+                                            child: Text(
+                                              item.itemNumber,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.teal[700],
+                                              ),
+                                            ),
+                                          ),
                                         Expanded(child: Text(item.name)),
                                         Text(
                                           '€${item.price.toStringAsFixed(2)}',
@@ -764,11 +855,13 @@ class CategoryData {
 
 class ItemData {
   String name;
+  String itemNumber;
   double price;
   String description;
 
   ItemData({
     required this.name,
+    required this.itemNumber,
     required this.price,
     required this.description,
   });

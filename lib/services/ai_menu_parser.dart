@@ -86,6 +86,7 @@ class CategoryData {
 
 class MenuItemData {
   final String name;
+  final String? itemNumber;
   final double? price;
   final String? description;
   final bool hasVariants;
@@ -93,6 +94,7 @@ class MenuItemData {
 
   MenuItemData({
     required this.name,
+    this.itemNumber,
     this.price,
     this.description,
     this.hasVariants = false,
@@ -102,6 +104,7 @@ class MenuItemData {
   factory MenuItemData.fromJson(Map<String, dynamic> json) {
     return MenuItemData(
       name: json['name'] as String,
+      itemNumber: json['item_number'] as String?,
       price: json['price'] != null ? (json['price'] as num).toDouble() : null,
       description: json['description'] as String?,
       hasVariants: json['has_variants'] as bool? ?? false,
@@ -195,10 +198,14 @@ Please analyze this restaurant menu PDF and extract all the information into a s
 Extract the following information:
 1. Restaurant details (name, address, phone, email, description, cuisine type, whether they deliver)
 2. All menu categories (e.g., Appetizers, Main Courses, Desserts, Drinks)
-3. All menu items with their names, prices, and descriptions
+3. All menu items with their names, prices, descriptions, and item numbers
 4. If items have variants/sizes (e.g., Small/Large), list them
 
 Important guidelines:
+- CRITICAL: Look carefully for item numbers on the menu! Most menus have numbered items like "1", "2", "3" or "1a", "2b", "10", "12c"
+- Item numbers are usually at the start of each menu item line or next to the item name
+- Extract ALL visible item numbers as the "item_number" field
+- Item numbers can be numeric ("1", "2", "10") or alphanumeric ("1a", "2b", "3c")
 - All prices should be in numeric format (e.g., 8.50, not "8,50 €")
 - If an item has multiple sizes/variants, set has_variants to true and list each variant
 - If opening hours are visible, extract them as day-keyed object (e.g., {"monday": "11:00-22:00"})
@@ -233,12 +240,21 @@ Return ONLY valid JSON in this exact format (no markdown, no code blocks, just t
       "items": [
         {
           "name": "Bruschetta",
+          "item_number": "1",
           "price": 6.50,
           "description": "Toasted bread with tomatoes and basil",
           "has_variants": false
         },
         {
+          "name": "Caprese Salad",
+          "item_number": "2a",
+          "price": 7.90,
+          "description": "Fresh mozzarella with tomatoes",
+          "has_variants": false
+        },
+        {
           "name": "Pizza Margherita",
+          "item_number": "5",
           "description": "Classic tomato and mozzarella pizza",
           "has_variants": true,
           "variants": [

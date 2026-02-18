@@ -390,6 +390,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
               .insert({
                 'category_id': categoryId,
                 'name': _getItemName(catIndex, itemIndex),
+                'item_number': item.itemNumber ?? '${itemIndex + 1}',
                 'price': _getItemPrice(catIndex, itemIndex),
                 'description': _getItemDescription(catIndex, itemIndex),
                 'available': true,
@@ -480,6 +481,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
               .insert({
                 'category_id': categoryId,
                 'name': _getItemName(catIndex, itemIndex),
+                'item_number': item.itemNumber ?? '${itemIndex + 1}',
                 'price': _getItemPrice(catIndex, itemIndex),
                 'description': _getItemDescription(catIndex, itemIndex),
                 'available': true,

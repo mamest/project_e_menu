@@ -582,7 +582,11 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
           constraints: const BoxConstraints(maxWidth: 1200),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.teal.shade50, Colors.cyan.shade50, Colors.white],
+              colors: [
+                const Color(0xFFF5F7FA),
+                Colors.purple.shade50.withOpacity(0.3),
+                Colors.blue.shade50.withOpacity(0.3),
+              ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
@@ -595,40 +599,72 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                FloatingActionButton.extended(
-                  onPressed: () async {
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const CreateRestaurantPage(),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.teal.shade400, Colors.cyan.shade400],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.teal.withOpacity(0.4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
                       ),
-                    );
-                    if (result == true) {
-                      _loadRestaurants();
-                    }
-                  },
-                  heroTag: 'create_manual',
-                  icon: const Icon(Icons.edit),
-                  label: const Text('Create Manually'),
-                  backgroundColor: Colors.teal,
+                    ],
+                  ),
+                  child: FloatingActionButton.extended(
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const CreateRestaurantPage(),
+                        ),
+                      );
+                      if (result == true) {
+                        _loadRestaurants();
+                      }
+                    },
+                    heroTag: 'create_manual',
+                    icon: const Icon(Icons.edit),
+                    label: const Text('Create Manually'),
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                  ),
                 ),
                 const SizedBox(height: 12),
-                FloatingActionButton.extended(
-                  onPressed: () async {
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const AdminUploadPage(),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.purple.shade400, Colors.deepPurple.shade500],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.purple.withOpacity(0.4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
                       ),
-                    );
-                    if (result == true) {
-                      _loadRestaurants();
-                    }
-                  },
-                  heroTag: 'upload_pdf',
-                  icon: const Icon(Icons.upload_file),
-                  label: const Text('Upload PDF'),
-                  backgroundColor: Colors.purple,
+                    ],
+                  ),
+                  child: FloatingActionButton.extended(
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminUploadPage(),
+                        ),
+                      );
+                      if (result == true) {
+                        _loadRestaurants();
+                      }
+                    },
+                    heroTag: 'upload_pdf',
+                    icon: const Icon(Icons.upload_file),
+                    label: const Text('Upload PDF'),
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                  ),
                 ),
               ],
             )
@@ -639,9 +675,9 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       flexibleSpace: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.teal, Colors.cyan],
+            colors: [Colors.deepPurple.shade600, Colors.deepPurple.shade400, Colors.purpleAccent],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -814,20 +850,28 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
     final hasItems = restaurantCart.items.isNotEmpty;
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      elevation: 8,
+      shadowColor: Colors.deepPurple.withOpacity(0.3),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.white, Colors.teal.shade50],
+            colors: [Colors.white, Colors.purple.shade50, Colors.blue.shade50],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.deepPurple.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           onTap: () async {
             await Navigator.push(
               context,
@@ -870,22 +914,47 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
   }
 
   Widget _buildRestaurantImage(Restaurant restaurant) {
-    return ClipRRect(
-      borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(16),
-        topRight: Radius.circular(16),
-      ),
-      child: Image.network(
-        restaurant.imageUrl!,
-        height: 180,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => Container(
-          height: 180,
-          color: Colors.grey[300],
-          child: const Icon(Icons.restaurant, size: 64, color: Colors.grey),
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+          child: Image.network(
+            restaurant.imageUrl!,
+            height: 200,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              height: 200,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.deepPurple.shade200, Colors.purple.shade300],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: const Icon(Icons.restaurant, size: 64, color: Colors.white),
+            ),
+          ),
         ),
-      ),
+        // Gradient overlay for better text visibility if needed
+        Container(
+          height: 200,
+          decoration: BoxDecoration(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+            gradient: LinearGradient(
+              colors: [Colors.transparent, Colors.black.withOpacity(0.2)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -899,25 +968,36 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
           child: Text(
             restaurant.name,
             style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.teal.shade800,
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              foreground: Paint()
+                ..shader = LinearGradient(
+                  colors: [Colors.deepPurple.shade700, Colors.purple.shade400],
+                ).createShader(const Rect.fromLTWH(0.0, 0.0, 200.0, 70.0)),
             ),
           ),
         ),
         if (isOwner)
-          IconButton(
-            icon: const Icon(Icons.edit, color: Colors.teal),
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EditRestaurantPage(restaurant: restaurant),
-                ),
-              );
-              _loadRestaurants(); // Reload to show any changes
-            },
-            tooltip: 'Edit Restaurant',
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.orange.shade400, Colors.deepOrange.shade400],
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.edit, color: Colors.white),
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => EditRestaurantPage(restaurant: restaurant),
+                  ),
+                );
+                _loadRestaurants(); // Reload to show any changes
+              },
+              tooltip: 'Edit Restaurant',
+            ),
           ),
         if (hasItems) _buildCartBadge(restaurantCart),
         if (restaurant.delivers) _buildDeliveryBadge(),
@@ -1081,27 +1161,34 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
       runSpacing: 6,
       children: restaurant.paymentMethods!.map((method) {
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.purple.shade300, Colors.purple.shade500],
+              colors: [Colors.deepPurple.shade400, Colors.purple.shade500],
             ),
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.purple.withOpacity(0.3),
-                blurRadius: 3,
+                color: Colors.purple.withOpacity(0.4),
+                blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
-          child: Text(
-            method,
-            style: const TextStyle(
-              fontSize: 11,
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.payment, size: 14, color: Colors.white),
+              const SizedBox(width: 4),
+              Text(
+                method,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         );
       }).toList(),
