@@ -36,7 +36,8 @@ CREATE TABLE categories (
   id bigserial PRIMARY KEY,
   restaurant_id bigint NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
   name text NOT NULL,
-  display_order int DEFAULT 0
+  display_order int DEFAULT 0,
+  image_url text
 );
 
 -- Items table (menu items belong to categories)
@@ -183,120 +184,120 @@ INSERT INTO restaurants (id, name, address, email, phone, description, image_url
 ON CONFLICT (id) DO NOTHING;
 
 -- Categories for Golden Dragon (Chinese)
-INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
-  (1, 1, 'Appetizers', 1),
-  (2, 1, 'Soups', 2),
-  (3, 1, 'Main Dishes', 3),
-  (4, 1, 'Beverages', 4)
+INSERT INTO categories (id, restaurant_id, name, display_order, image_url) VALUES
+  (1, 1, 'Appetizers', 1, 'https://images.unsplash.com/photo-1541014741259-de529411b96a?w=600&h=200&fit=crop'),
+  (2, 1, 'Soups', 2, 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600&h=200&fit=crop'),
+  (3, 1, 'Main Dishes', 3, 'https://images.unsplash.com/photo-1563245372-f21724e3856d?w=600&h=200&fit=crop'),
+  (4, 1, 'Beverages', 4, 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600&h=200&fit=crop')
 ON CONFLICT (id) DO NOTHING;
 
 -- Categories for La Bella Vita (Italian)
-INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
-  (5, 2, 'Antipasti', 1),
-  (6, 2, 'Pizza', 2),
-  (7, 2, 'Pasta', 3),
-  (8, 2, 'Desserts', 4),
-  (9, 2, 'Drinks', 5)
+INSERT INTO categories (id, restaurant_id, name, display_order, image_url) VALUES
+  (5, 2, 'Antipasti', 1, 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=600&h=200&fit=crop'),
+  (6, 2, 'Pizza', 2, 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&h=200&fit=crop'),
+  (7, 2, 'Pasta', 3, 'https://images.unsplash.com/photo-1551183053-bf91798d74b9?w=600&h=200&fit=crop'),
+  (8, 2, 'Desserts', 4, 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=600&h=200&fit=crop'),
+  (9, 2, 'Drinks', 5, 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=600&h=200&fit=crop')
 ON CONFLICT (id) DO NOTHING;
 
 -- Categories for Taverna Olympia (Greek)
-INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
-  (10, 3, 'Mezze', 1),
-  (11, 3, 'Grilled Specialties', 2),
-  (12, 3, 'Traditional Dishes', 3),
-  (13, 3, 'Beverages', 4)
+INSERT INTO categories (id, restaurant_id, name, display_order, image_url) VALUES
+  (10, 3, 'Mezze', 1, 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=600&h=200&fit=crop'),
+  (11, 3, 'Grilled Specialties', 2, 'https://images.unsplash.com/photo-1529516548873-9ce57c8f155e?w=600&h=200&fit=crop'),
+  (12, 3, 'Traditional Dishes', 3, 'https://images.unsplash.com/photo-1600803907087-f56d462fd26b?w=600&h=200&fit=crop'),
+  (13, 3, 'Beverages', 4, 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600&h=200&fit=crop')
 ON CONFLICT (id) DO NOTHING;
 
 -- Categories for Sushi Heaven (Japanese)
-INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
-  (14, 4, 'Nigiri', 1),
-  (15, 4, 'Maki Rolls', 2),
-  (16, 4, 'Special Rolls', 3),
-  (17, 4, 'Sashimi', 4),
-  (18, 4, 'Drinks', 5)
+INSERT INTO categories (id, restaurant_id, name, display_order, image_url) VALUES
+  (14, 4, 'Nigiri', 1, 'https://images.unsplash.com/photo-1617196034183-421b4040ed20?w=600&h=200&fit=crop'),
+  (15, 4, 'Maki Rolls', 2, 'https://images.unsplash.com/photo-1617196034776-f26e5ead5356?w=600&h=200&fit=crop'),
+  (16, 4, 'Special Rolls', 3, 'https://images.unsplash.com/photo-1606755962773-d324e0a13086?w=600&h=200&fit=crop'),
+  (17, 4, 'Sashimi', 4, 'https://images.unsplash.com/photo-1440638852823-f97a7f2ea9b0?w=600&h=200&fit=crop'),
+  (18, 4, 'Drinks', 5, 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600&h=200&fit=crop')
 ON CONFLICT (id) DO NOTHING;
 
 -- Categories for Curry Palace (Indian)
-INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
-  (19, 5, 'Starters', 1),
-  (20, 5, 'Tandoori', 2),
-  (21, 5, 'Curries', 3),
-  (22, 5, 'Biryani & Rice', 4),
-  (23, 5, 'Breads', 5),
-  (24, 5, 'Beverages', 6)
+INSERT INTO categories (id, restaurant_id, name, display_order, image_url) VALUES
+  (19, 5, 'Starters', 1, 'https://images.unsplash.com/photo-1567188040759-fb8a883dc6d6?w=600&h=200&fit=crop'),
+  (20, 5, 'Tandoori', 2, 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=600&h=200&fit=crop'),
+  (21, 5, 'Curries', 3, 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=600&h=200&fit=crop'),
+  (22, 5, 'Biryani & Rice', 4, 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&h=200&fit=crop'),
+  (23, 5, 'Breads', 5, 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&h=200&fit=crop'),
+  (24, 5, 'Beverages', 6, 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600&h=200&fit=crop')
 ON CONFLICT (id) DO NOTHING;
 
 -- Categories for Le Bistro Parisien (French)
-INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
-  (25, 6, 'Entrées', 1),
-  (26, 6, 'Plats Principaux', 2),
-  (27, 6, 'Fromages', 3),
-  (28, 6, 'Desserts', 4),
-  (29, 6, 'Vins', 5)
+INSERT INTO categories (id, restaurant_id, name, display_order, image_url) VALUES
+  (25, 6, 'Entrées', 1, 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&h=200&fit=crop'),
+  (26, 6, 'Plats Principaux', 2, 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&h=200&fit=crop'),
+  (27, 6, 'Fromages', 3, 'https://images.unsplash.com/photo-1452195100486-9cc805987862?w=600&h=200&fit=crop'),
+  (28, 6, 'Desserts', 4, 'https://images.unsplash.com/photo-1551024601-bec78aea704b?w=600&h=200&fit=crop'),
+  (29, 6, 'Vins', 5, 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=600&h=200&fit=crop')
 ON CONFLICT (id) DO NOTHING;
 
 -- Categories for Taco Fiesta (Mexican)
-INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
-  (30, 7, 'Antojitos', 1),
-  (31, 7, 'Tacos', 2),
-  (32, 7, 'Burritos & Quesadillas', 3),
-  (33, 7, 'Mains', 4),
-  (34, 7, 'Drinks', 5)
+INSERT INTO categories (id, restaurant_id, name, display_order, image_url) VALUES
+  (30, 7, 'Antojitos', 1, 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=600&h=200&fit=crop'),
+  (31, 7, 'Tacos', 2, 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=600&h=200&fit=crop'),
+  (32, 7, 'Burritos & Quesadillas', 3, 'https://images.unsplash.com/photo-1561758033-7e924f619af0?w=600&h=200&fit=crop'),
+  (33, 7, 'Mains', 4, 'https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=600&h=200&fit=crop'),
+  (34, 7, 'Drinks', 5, 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600&h=200&fit=crop')
 ON CONFLICT (id) DO NOTHING;
 
 -- Categories for Saigon Street Kitchen (Vietnamese)
-INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
-  (35, 8, 'Appetizers', 1),
-  (36, 8, 'Pho', 2),
-  (37, 8, 'Banh Mi', 3),
-  (38, 8, 'Rice & Noodles', 4),
-  (39, 8, 'Beverages', 5)
+INSERT INTO categories (id, restaurant_id, name, display_order, image_url) VALUES
+  (35, 8, 'Appetizers', 1, 'https://images.unsplash.com/photo-1541014741259-de529411b96a?w=600&h=200&fit=crop'),
+  (36, 8, 'Pho', 2, 'https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=600&h=200&fit=crop'),
+  (37, 8, 'Banh Mi', 3, 'https://images.unsplash.com/photo-1559847844-5315695dadae?w=600&h=200&fit=crop'),
+  (38, 8, 'Rice & Noodles', 4, 'https://images.unsplash.com/photo-1555126634-323283e090fa?w=600&h=200&fit=crop'),
+  (39, 8, 'Beverages', 5, 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600&h=200&fit=crop')
 ON CONFLICT (id) DO NOTHING;
 
 -- Categories for The American Diner (American)
-INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
-  (40, 9, 'Appetizers', 1),
-  (41, 9, 'Burgers', 2),
-  (42, 9, 'Mains', 3),
-  (43, 9, 'Desserts', 4),
-  (44, 9, 'Shakes & Drinks', 5)
+INSERT INTO categories (id, restaurant_id, name, display_order, image_url) VALUES
+  (40, 9, 'Appetizers', 1, 'https://images.unsplash.com/photo-1541014741259-de529411b96a?w=600&h=200&fit=crop'),
+  (41, 9, 'Burgers', 2, 'https://images.unsplash.com/photo-1550317138-10000687a72b?w=600&h=200&fit=crop'),
+  (42, 9, 'Mains', 3, 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&h=200&fit=crop'),
+  (43, 9, 'Desserts', 4, 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=600&h=200&fit=crop'),
+  (44, 9, 'Shakes & Drinks', 5, 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=600&h=200&fit=crop')
 ON CONFLICT (id) DO NOTHING;
 
 -- Categories for Istanbul Grill (Turkish)
-INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
-  (45, 10, 'Mezze', 1),
-  (46, 10, 'Kebabs', 2),
-  (47, 10, 'Pide & Lahmacun', 3),
-  (48, 10, 'Mains', 4),
-  (49, 10, 'Beverages', 5)
+INSERT INTO categories (id, restaurant_id, name, display_order, image_url) VALUES
+  (45, 10, 'Mezze', 1, 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=600&h=200&fit=crop'),
+  (46, 10, 'Kebabs', 2, 'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=600&h=200&fit=crop'),
+  (47, 10, 'Pide & Lahmacun', 3, 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&h=200&fit=crop'),
+  (48, 10, 'Mains', 4, 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&h=200&fit=crop'),
+  (49, 10, 'Beverages', 5, 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600&h=200&fit=crop')
 ON CONFLICT (id) DO NOTHING;
 
 -- Categories for Thai Orchid (Thai)
-INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
-  (50, 11, 'Appetizers', 1),
-  (51, 11, 'Soups', 2),
-  (52, 11, 'Curries', 3),
-  (53, 11, 'Stir-Fry', 4),
-  (54, 11, 'Noodles & Rice', 5),
-  (55, 11, 'Beverages', 6)
+INSERT INTO categories (id, restaurant_id, name, display_order, image_url) VALUES
+  (50, 11, 'Appetizers', 1, 'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=600&h=200&fit=crop'),
+  (51, 11, 'Soups', 2, 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600&h=200&fit=crop'),
+  (52, 11, 'Curries', 3, 'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=600&h=200&fit=crop'),
+  (53, 11, 'Stir-Fry', 4, 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=600&h=200&fit=crop'),
+  (54, 11, 'Noodles & Rice', 5, 'https://images.unsplash.com/photo-1555126634-323283e090fa?w=600&h=200&fit=crop'),
+  (55, 11, 'Beverages', 6, 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600&h=200&fit=crop')
 ON CONFLICT (id) DO NOTHING;
 
 -- Categories for Seoul BBQ (Korean)
-INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
-  (56, 12, 'Appetizers', 1),
-  (57, 12, 'BBQ Meats', 2),
-  (58, 12, 'Hot Pots', 3),
-  (59, 12, 'Main Dishes', 4),
-  (60, 12, 'Beverages', 5)
+INSERT INTO categories (id, restaurant_id, name, display_order, image_url) VALUES
+  (56, 12, 'Appetizers', 1, 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=600&h=200&fit=crop'),
+  (57, 12, 'BBQ Meats', 2, 'https://images.unsplash.com/photo-1558030137-a56c1b004fa6?w=600&h=200&fit=crop'),
+  (58, 12, 'Hot Pots', 3, 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600&h=200&fit=crop'),
+  (59, 12, 'Main Dishes', 4, 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=600&h=200&fit=crop'),
+  (60, 12, 'Beverages', 5, 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600&h=200&fit=crop')
 ON CONFLICT (id) DO NOTHING;
 
 -- Categories for Tapas y Vino (Spanish)
-INSERT INTO categories (id, restaurant_id, name, display_order) VALUES
-  (61, 13, 'Tapas Frías', 1),
-  (62, 13, 'Tapas Calientes', 2),
-  (63, 13, 'Raciones', 3),
-  (64, 13, 'Postres', 4),
-  (65, 13, 'Bebidas', 5)
+INSERT INTO categories (id, restaurant_id, name, display_order, image_url) VALUES
+  (61, 13, 'Tapas Frías', 1, 'https://images.unsplash.com/photo-1534080564583-6be75777b70a?w=600&h=200&fit=crop'),
+  (62, 13, 'Tapas Calientes', 2, 'https://images.unsplash.com/photo-1534080564583-6be75777b70a?w=600&h=200&fit=crop'),
+  (63, 13, 'Raciones', 3, 'https://images.unsplash.com/photo-1534330207526-8e81f10ec6fc?w=600&h=200&fit=crop'),
+  (64, 13, 'Postres', 4, 'https://images.unsplash.com/photo-1551024601-bec78aea704b?w=600&h=200&fit=crop'),
+  (65, 13, 'Bebidas', 5, 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=600&h=200&fit=crop')
 ON CONFLICT (id) DO NOTHING;
 
 -- Items for Golden Dragon (Chinese)

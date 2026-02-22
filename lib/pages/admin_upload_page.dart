@@ -18,8 +18,12 @@ class AdminUploadPage extends StatefulWidget {
 }
 
 class _AdminUploadPageState extends State<AdminUploadPage> {
-  Uint8List? _pdfBytes;
+  // Single PDF file
+  Uint8List? _fileBytes;
   String? _fileName;
+  // Multiple image files
+  List<Uint8List> _imageBytesList = [];
+  List<String> _imageNameList = [];
   bool _isProcessing = false;
   bool _isUploading = false;
   MenuData? _extractedData;
@@ -50,23 +54,63 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
     super.dispose();
   }
 
-  Future<void> _pickPdfFile() async {
+  /// Whether any file(s) have been selected.
+  bool get _hasFiles => _fileBytes != null || _imageBytesList.isNotEmpty;
+
+  void _clearFiles() {
+    _fileBytes = null;
+    _fileName = null;
+    _imageBytesList = [];
+    _imageNameList = [];
+    _extractedData = null;
+    _editedCategories.clear();
+    _editedItems.clear();
+    _editedVariants.clear();
+  }
+
+  static bool _isImageExtension(String name) {
+    final ext = name.split('.').last.toLowerCase();
+    return const {'jpg', 'jpeg', 'png', 'gif', 'webp'}.contains(ext);
+  }
+
+  Future<void> _pickMenuFile() async {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['pdf'],
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp'],
+        allowMultiple: true,
         withData: true,
       );
 
-      if (result != null && result.files.isNotEmpty) {
-        final file = result.files.first;
+      if (result == null || result.files.isEmpty) return;
+
+      final files = result.files;
+      final hasPdf = files.any((f) => f.name.toLowerCase().endsWith('.pdf'));
+      final hasImages = files.any((f) => _isImageExtension(f.name));
+
+      if (hasPdf && hasImages) {
         setState(() {
-          _pdfBytes = file.bytes;
-          _fileName = file.name;
-          _extractedData = null;
-          _errorMessage = null;
+          _errorMessage = 'Please select either a PDF or image file(s), not both.';
         });
+        return;
       }
+
+      setState(() {
+        _clearFiles();
+        if (hasPdf) {
+          final pdfFile = files.first;
+          _fileBytes = pdfFile.bytes;
+          _fileName = pdfFile.name;
+        } else {
+          for (final f in files) {
+            if (f.bytes != null) {
+              _imageBytesList.add(f.bytes!);
+              _imageNameList.add(f.name);
+            }
+          }
+        }
+        _errorMessage = null;
+      });
     } catch (e) {
       setState(() {
         _errorMessage = 'Error picking file: $e';
@@ -75,7 +119,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
   }
 
   Future<void> _processWithAI() async {
-    if (_pdfBytes == null) return;
+    if (!_hasFiles) return;
 
     setState(() {
       _isProcessing = true;
@@ -84,7 +128,14 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
 
     try {
       final parser = AiMenuParser();
-      final menuData = await parser.parseMenuPdf(_pdfBytes!, _fileName!);
+      final MenuData menuData;
+      if (_fileBytes != null) {
+        // PDF path
+        menuData = await parser.parseMenuFile(_fileBytes!, _fileName!);
+      } else {
+        // Multi-image path
+        menuData = await parser.parseMenuImages(_imageBytesList, _imageNameList);
+      }
       
       setState(() {
         _extractedData = menuData;
@@ -298,7 +349,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context, 'update'),
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-                  child: const Text('Update Menu from PDF'),
+                  child: const Text('Update Menu from File'),
                 ),
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context, 'edit'),
@@ -514,7 +565,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Menu updated successfully with new data from PDF!'),
+            content: Text('Menu updated successfully with new data!'),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 3),
           ),
@@ -684,7 +735,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
                     const BackButton(color: Colors.white),
                     const Expanded(
                       child: Text(
-                        'Upload Menu PDF',
+                        'Upload Menu File',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 20,
@@ -719,7 +770,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Please sign in to upload menu PDFs',
+                  'Please sign in to upload menu files',
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 16,
@@ -761,7 +812,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
                   const BackButton(color: Colors.white),
                   const Expanded(
                     child: Text(
-                      'Upload Menu PDF',
+                      'Upload Menu File',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 20,
@@ -808,7 +859,8 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      '1. Upload a PDF menu\n'
+                      '1. Upload a PDF menu, or one or more images (JPG, PNG, WebP, …)\n'
+                      '   – Images: select multiple pages at once if needed\n'
                       '2. AI will extract restaurant info and menu items\n'
                       '3. Review the extracted data\n'
                       '4. Save to database',
@@ -822,9 +874,9 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
 
             // File picker button
             ElevatedButton.icon(
-              onPressed: _isProcessing || _isUploading ? null : _pickPdfFile,
+              onPressed: _isProcessing || _isUploading ? null : _pickMenuFile,
               icon: const Icon(Icons.upload_file),
-              label: const Text('Choose PDF Menu'),
+              label: const Text('Choose Menu File (PDF / Image)'),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.all(16),
                 backgroundColor: Colors.teal,
@@ -832,27 +884,53 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
               ),
             ),
 
-            if (_fileName != null) ...[
+            if (_hasFiles) ...[
               const SizedBox(height: 16),
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
-                  title: Text(_fileName!),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () {
-                      setState(() {
-                        _pdfBytes = null;
-                        _fileName = null;
-                        _extractedData = null;
-                        _editedCategories.clear();
-                        _editedItems.clear();
-                        _editedVariants.clear();
-                      });
-                    },
+
+              // PDF tile
+              if (_fileName != null)
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
+                    title: Text(_fileName!),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => setState(_clearFiles),
+                    ),
                   ),
                 ),
-              ),
+
+              // Image tiles (one per file, individually removable)
+              if (_imageBytesList.isNotEmpty) ...[
+                ...List.generate(_imageBytesList.length, (i) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.image, color: Colors.blue),
+                      title: Text(_imageNameList[i]),
+                      subtitle: _imageBytesList.length > 1
+                          ? Text('Page ${i + 1} of ${_imageBytesList.length}')
+                          : null,
+                      trailing: IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () {
+                          setState(() {
+                            _imageBytesList.removeAt(i);
+                            _imageNameList.removeAt(i);
+                            if (_imageBytesList.isEmpty) {
+                              _extractedData = null;
+                              _editedCategories.clear();
+                              _editedItems.clear();
+                              _editedVariants.clear();
+                            }
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                )),
+              ],
+
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: _isProcessing || _isUploading ? null : _processWithAI,

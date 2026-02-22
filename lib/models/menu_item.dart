@@ -2,8 +2,13 @@ class Category {
   final int id;
   final String name;
   final List<MenuItem> items;
+  final String? imageUrl;
 
-  Category({required this.id, required this.name, required this.items});
+  Category({required this.id, required this.name, required this.items, this.imageUrl});
+
+  Category copyWith({String? imageUrl}) {
+    return Category(id: id, name: name, items: items, imageUrl: imageUrl ?? this.imageUrl);
+  }
 }
 
 class MenuItem {

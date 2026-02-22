@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/restaurant.dart';
 import '../models/menu_item.dart';
 import '../services/auth_service.dart';
+import '../services/unsplash_service.dart';
+import '../widgets/unsplash_picker_dialog.dart';
 
 class EditRestaurantPage extends StatefulWidget {
   final Restaurant restaurant;
@@ -18,6 +20,17 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
   final AuthService _authService = AuthService();
   final SupabaseClient _supabase = Supabase.instance.client;
 
+  static const List<String> _weekDays = [
+    'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
+  ];
+  static const Map<String, String> _dayLabels = {
+    'monday': 'Monday', 'tuesday': 'Tuesday', 'wednesday': 'Wednesday',
+    'thursday': 'Thursday', 'friday': 'Friday', 'saturday': 'Saturday', 'sunday': 'Sunday',
+  };
+  static const List<String> _availablePaymentMethods = [
+    'Cash', 'Card', 'EC-Karte', 'PayPal', 'Apple Pay', 'Google Pay', 'Invoice',
+  ];
+
   late TextEditingController _nameController;
   late TextEditingController _addressController;
   late TextEditingController _phoneController;
@@ -25,6 +38,10 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
   late TextEditingController _descriptionController;
   late TextEditingController _cuisineTypeController;
   late bool _delivers;
+  String? _imageUrl;
+  Map<String, String> _openingHours = {};
+  final Map<String, TextEditingController> _hoursControllers = {};
+  List<String> _paymentMethods = [];
 
   List<MenuCategory> _categories = [];
   bool _isLoading = true;
@@ -41,6 +58,16 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
     _descriptionController = TextEditingController(text: widget.restaurant.description ?? '');
     _cuisineTypeController = TextEditingController(text: widget.restaurant.cuisineType ?? '');
     _delivers = widget.restaurant.delivers;
+    _imageUrl = widget.restaurant.imageUrl;
+    // Opening hours
+    final oh = widget.restaurant.openingHours;
+    for (final day in _weekDays) {
+      final val = oh?[day]?.toString() ?? 'closed';
+      _openingHours[day] = val;
+      _hoursControllers[day] = TextEditingController(text: val == 'closed' ? '' : val);
+    }
+    // Payment methods
+    _paymentMethods = List<String>.from(widget.restaurant.paymentMethods ?? []);
     _loadMenuData();
   }
 
@@ -52,6 +79,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
     _emailController.dispose();
     _descriptionController.dispose();
     _cuisineTypeController.dispose();
+    for (final c in _hoursControllers.values) c.dispose();
     super.dispose();
   }
 
@@ -88,7 +116,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
       // Load categories
       final categoriesData = await _supabase
           .from('categories')
-          .select('id, name, display_order')
+          .select('id, name, display_order, image_url')
           .eq('restaurant_id', widget.restaurant.id)
           .order('display_order');
 
@@ -120,6 +148,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
           name: catData['name'] as String,
           displayOrder: catData['display_order'] as int? ?? 0,
           items: items,
+          imageUrl: catData['image_url'] as String?,
         ));
       }
 
@@ -152,6 +181,9 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
         'description': _descriptionController.text.isEmpty ? null : _descriptionController.text,
         'cuisine_type': _cuisineTypeController.text.isEmpty ? null : _cuisineTypeController.text,
         'delivers': _delivers,
+        'image_url': _imageUrl,
+        'opening_hours': _openingHours.isEmpty ? null : Map<String, dynamic>.from(_openingHours),
+        'payment_methods': _paymentMethods.isEmpty ? null : _paymentMethods,
       }).eq('id', widget.restaurant.id);
 
       if (mounted) {
@@ -214,7 +246,20 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
             name: response['name'],
             displayOrder: response['display_order'] ?? 0,
             items: [],
+            imageUrl: null,
           ));
+        });
+
+        // Auto-suggest a category image in the background
+        final catName = nameController.text;
+        UnsplashService.getCategoryImage(catName).then((url) {
+          if (url != null && mounted) {
+            _supabase.from('categories').update({'image_url': url}).eq('id', response['id']);
+            setState(() {
+              final idx = _categories.indexWhere((c) => c.id == response['id']);
+              if (idx >= 0) _categories[idx].imageUrl = url;
+            });
+          }
         });
 
         if (mounted) {
@@ -369,6 +414,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
             name: nameController.text,
             displayOrder: category.displayOrder,
             items: category.items,
+            imageUrl: category.imageUrl,
           );
         });
 
@@ -698,6 +744,90 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
     );
   }
 
+  Future<void> _openUnsplashPicker() async {
+    final query = '${_cuisineTypeController.text.trim()} food restaurant'.trim();
+    final picked = await UnsplashPickerDialog.show(context, initialQuery: query.isEmpty ? 'restaurant food' : query);
+    if (picked != null && mounted) setState(() => _imageUrl = picked);
+  }
+
+  Future<void> _autoSuggestImage() async {
+    final query = '${_cuisineTypeController.text.trim()} food restaurant'.trim();
+    setState(() => _isSaving = true);
+    final url = await UnsplashService.getRestaurantImage(query.isEmpty ? 'restaurant food' : query);
+    if (mounted) setState(() { _imageUrl = url; _isSaving = false; });
+  }
+
+  Widget _buildEditImageSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            const Text('Restaurant Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: _autoSuggestImage,
+              icon: const Icon(Icons.refresh, size: 16),
+              label: const Text('Auto-suggest'),
+              style: TextButton.styleFrom(foregroundColor: Colors.teal),
+            ),
+            const SizedBox(width: 4),
+            ElevatedButton.icon(
+              onPressed: _openUnsplashPicker,
+              icon: const Icon(Icons.image_search, size: 16),
+              label: const Text('Browse Unsplash'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (_imageUrl != null && _imageUrl!.isNotEmpty)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              _imageUrl!,
+              height: 160,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              loadingBuilder: (_, child, progress) => progress == null
+                  ? child
+                  : Container(height: 160, color: Colors.grey[100],
+                      child: const Center(child: CircularProgressIndicator(strokeWidth: 2))),
+              errorBuilder: (_, __, ___) => Container(
+                height: 160, color: Colors.grey[200],
+                child: const Center(child: Icon(Icons.broken_image, size: 40, color: Colors.grey)),
+              ),
+            ),
+          )
+        else
+          Container(
+            height: 120,
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.add_photo_alternate_outlined, size: 36, color: Colors.grey[400]),
+                  const SizedBox(height: 6),
+                  Text('No photo — tap "Auto-suggest" or "Browse Unsplash"',
+                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                      textAlign: TextAlign.center),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildRestaurantInfoTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -775,6 +905,12 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
               onChanged: (value) => setState(() => _delivers = value),
               activeColor: Colors.teal,
             ),
+            const SizedBox(height: 16),
+            _buildOpeningHoursSection(),
+            const SizedBox(height: 16),
+            _buildPaymentMethodsSection(),
+            const SizedBox(height: 16),
+            _buildEditImageSection(),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: _isSaving ? null : _saveRestaurantInfo,
@@ -790,6 +926,125 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
         ),
       ),
     );
+  }
+
+  Widget _buildOpeningHoursSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Opening Hours', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey[300]!),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            children: _weekDays.asMap().entries.map((entry) {
+              final i = entry.key;
+              final day = entry.value;
+              final isOpen = (_openingHours[day] ?? 'closed') != 'closed';
+              return Column(
+                children: [
+                  if (i > 0) Divider(height: 1, color: Colors.grey[200]),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 88,
+                          child: Text(_dayLabels[day]!, style: const TextStyle(fontWeight: FontWeight.w500)),
+                        ),
+                        Switch(
+                          value: isOpen,
+                          onChanged: (v) => setState(() {
+                            if (v) {
+                              _openingHours[day] = '09:00–22:00';
+                              _hoursControllers[day]!.text = '09:00–22:00';
+                            } else {
+                              _openingHours[day] = 'closed';
+                              _hoursControllers[day]!.text = '';
+                            }
+                          }),
+                          activeColor: Colors.teal,
+                        ),
+                        const SizedBox(width: 8),
+                        if (isOpen)
+                          Expanded(
+                            child: TextFormField(
+                              controller: _hoursControllers[day],
+                              decoration: const InputDecoration(
+                                hintText: '09:00–22:00',
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                isDense: true,
+                              ),
+                              onChanged: (v) => _openingHours[day] = v,
+                            ),
+                          )
+                        else
+                          const Expanded(
+                            child: Text('Closed', style: TextStyle(color: Colors.grey)),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPaymentMethodsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Payment Methods', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: _availablePaymentMethods.map((method) {
+            final selected = _paymentMethods.contains(method);
+            return FilterChip(
+              label: Text(method),
+              selected: selected,
+              onSelected: (v) => setState(() {
+                if (v) {
+                  _paymentMethods.add(method);
+                } else {
+                  _paymentMethods.remove(method);
+                }
+              }),
+              selectedColor: Colors.teal.withOpacity(0.2),
+              checkmarkColor: Colors.teal,
+              labelStyle: TextStyle(
+                color: selected ? Colors.teal[800] : null,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickCategoryImage(MenuCategory category) async {
+    final picked = await UnsplashPickerDialog.show(
+      context,
+      initialQuery: 'food ${category.name}',
+    );
+    if (picked != null && mounted) {
+      try {
+        await _supabase.from('categories').update({'image_url': picked}).eq('id', category.id);
+        setState(() => category.imageUrl = picked);
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
   }
 
   Widget _buildMenuTab() {
@@ -822,17 +1077,43 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
                     return Card(
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       child: ExpansionTile(
-                        title: Text(
-                          category.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
+                        title: Row(
+                          children: [
+                            // Category image thumbnail
+                            if (category.imageUrl != null && category.imageUrl!.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 10),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: Image.network(
+                                    category.imageUrl!,
+                                    width: 40,
+                                    height: 28,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => const SizedBox(),
+                                  ),
+                                ),
+                              ),
+                            Expanded(
+                              child: Text(
+                                category.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         subtitle: Text('${category.items.length} items'),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            IconButton(
+                              icon: const Icon(Icons.image_search, color: Colors.teal),
+                              onPressed: () => _pickCategoryImage(category),
+                              tooltip: 'Change category photo',
+                            ),
                             IconButton(
                               icon: const Icon(Icons.add, color: Colors.green),
                               onPressed: () => _addItem(category),
@@ -938,11 +1219,13 @@ class MenuCategory {
   final String name;
   final int displayOrder;
   final List<MenuItem> items;
+  String? imageUrl;
 
   MenuCategory({
     required this.id,
     required this.name,
     required this.displayOrder,
     required this.items,
+    this.imageUrl,
   });
 }

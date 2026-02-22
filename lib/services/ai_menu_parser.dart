@@ -14,9 +14,10 @@ class MenuData {
 
   factory MenuData.fromJson(Map<String, dynamic> json) {
     return MenuData(
-      restaurant: RestaurantData.fromJson(json['restaurant']),
-      categories: (json['categories'] as List)
-          .map((cat) => CategoryData.fromJson(cat))
+      restaurant: RestaurantData.fromJson(
+          (json['restaurant'] as Map<String, dynamic>?) ?? {}),
+      categories: ((json['categories'] as List?) ?? [])
+          .map((cat) => CategoryData.fromJson(cat as Map<String, dynamic>))
           .toList(),
     );
   }
@@ -47,8 +48,8 @@ class RestaurantData {
 
   factory RestaurantData.fromJson(Map<String, dynamic> json) {
     return RestaurantData(
-      name: json['name'] as String,
-      address: json['address'] as String,
+      name: (json['name'] as String?) ?? 'Unknown Restaurant',
+      address: (json['address'] as String?) ?? '',
       phone: json['phone'] as String?,
       email: json['email'] as String?,
       description: json['description'] as String?,
@@ -75,9 +76,9 @@ class CategoryData {
 
   factory CategoryData.fromJson(Map<String, dynamic> json) {
     return CategoryData(
-      name: json['name'] as String,
-      displayOrder: json['display_order'] as int,
-      items: (json['items'] as List)
+      name: (json['name'] as String?) ?? 'Unnamed Category',
+      displayOrder: json['display_order'] as int? ?? 0,
+      items: (json['items'] as List? ?? [])
           .map((item) => MenuItemData.fromJson(item))
           .toList(),
     );
@@ -103,7 +104,7 @@ class MenuItemData {
 
   factory MenuItemData.fromJson(Map<String, dynamic> json) {
     return MenuItemData(
-      name: json['name'] as String,
+      name: (json['name'] as String?) ?? 'Unnamed Item',
       itemNumber: json['item_number'] as String?,
       price: json['price'] != null ? (json['price'] as num).toDouble() : null,
       description: json['description'] as String?,
@@ -130,8 +131,8 @@ class VariantData {
 
   factory VariantData.fromJson(Map<String, dynamic> json) {
     return VariantData(
-      name: json['name'] as String,
-      price: (json['price'] as num).toDouble(),
+      name: (json['name'] as String?) ?? 'Unnamed Variant',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
       displayOrder: json['display_order'] as int? ?? 0,
     );
   }
@@ -144,6 +145,90 @@ class AiMenuParser {
   AiMenuParser() 
       : _supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '',
         _supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+
+  /// Detect the MIME type from a file name extension.
+  static String _mimeTypeFromFileName(String fileName) {
+    final ext = fileName.split('.').last.toLowerCase();
+    switch (ext) {
+      case 'pdf':
+        return 'application/pdf';
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      default:
+        return 'application/octet-stream';
+    }
+  }
+
+  /// Parse any supported menu file (PDF or image) and extract structured menu data.
+  Future<MenuData> parseMenuFile(Uint8List fileBytes, String fileName) async {
+    final mimeType = _mimeTypeFromFileName(fileName);
+    if (mimeType == 'application/pdf') {
+      return parseMenuPdf(fileBytes, fileName);
+    } else if (mimeType.startsWith('image/')) {
+      return parseMenuImages([fileBytes], [fileName]);
+    } else {
+      throw Exception('Unsupported file type: $mimeType');
+    }
+  }
+
+  /// Parse one or more image menu files in a single AI request.
+  Future<MenuData> parseMenuImages(
+      List<Uint8List> imageBytesList, List<String> fileNames) async {
+    if (imageBytesList.isEmpty) {
+      throw Exception('No images provided');
+    }
+    try {
+      final images = List.generate(imageBytesList.length, (i) {
+        final mimeType = _mimeTypeFromFileName(fileNames[i]);
+        return {
+          'base64': base64Encode(imageBytesList[i]),
+          'mediaType': mimeType,
+        };
+      });
+      final prompt = _buildMenuExtractionPrompt(isImage: true);
+
+      final response = await http.post(
+        Uri.parse('$_supabaseUrl/functions/v1/anthropic-proxy'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_supabaseAnonKey',
+          'apikey': _supabaseAnonKey,
+        },
+        body: jsonEncode({
+          'images': images,
+          'prompt': prompt,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception(
+            'API request failed: ${response.statusCode} ${response.body}');
+      }
+
+      final responseData = jsonDecode(response.body);
+
+      String textContent = '';
+      if (responseData['content'] != null) {
+        for (final block in responseData['content']) {
+          if (block['type'] == 'text') {
+            textContent += block['text'] as String;
+          }
+        }
+      }
+
+      final jsonData = _extractJsonFromResponse(textContent);
+      return MenuData.fromJson(jsonData);
+    } catch (e) {
+      throw Exception('Failed to parse menu image(s): $e');
+    }
+  }
 
   /// Parse a PDF menu file and extract structured menu data
   Future<MenuData> parseMenuPdf(Uint8List pdfBytes, String fileName) async {
@@ -191,9 +276,10 @@ class AiMenuParser {
     }
   }
 
-  String _buildMenuExtractionPrompt() {
+  String _buildMenuExtractionPrompt({bool isImage = false}) {
+    final sourceType = isImage ? 'image' : 'PDF';
     return '''
-Please analyze this restaurant menu PDF and extract all the information into a structured JSON format.
+Please analyze this restaurant menu $sourceType and extract all the information into a structured JSON format.
 
 Extract the following information:
 1. Restaurant details (name, address, phone, email, description, cuisine type, whether they deliver)
@@ -268,7 +354,8 @@ Return ONLY valid JSON in this exact format (no markdown, no code blocks, just t
   ]
 }
 
-If any information is not available in the PDF, omit that field or use null.
+If any information is not available in the $sourceType, omit that field or use null.
+IMPORTANT: "name" and "address" under "restaurant" must always be non-null strings. If the restaurant name is not visible, use "Unknown Restaurant". If the address is not visible, use an empty string.
 ''';
   }
 

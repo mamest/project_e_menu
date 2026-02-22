@@ -5,6 +5,7 @@ import '../models/cart.dart';
 import '../models/menu_item.dart';
 import '../models/restaurant.dart';
 import '../services/pdf_service.dart';
+import '../services/unsplash_service.dart';
 
 class MenuPage extends StatefulWidget {
   final Restaurant restaurant;
@@ -61,7 +62,7 @@ class _MenuPageState extends State<MenuPage> {
       final response = await Supabase.instance.client
           .from('categories')
           .select(
-              'id, name, display_order, items(id, name, item_number, price, description, available, has_variants, item_variants(id, name, price, display_order))')
+              'id, name, display_order, image_url, items(id, name, item_number, price, description, available, has_variants, item_variants(id, name, price, display_order))')
           .eq('restaurant_id', widget.restaurant.id)
           .order('display_order');
 
@@ -84,6 +85,7 @@ class _MenuPageState extends State<MenuPage> {
             id: c['id'] as int,
             name: c['name'] as String,
             items: items,
+            imageUrl: c['image_url'] as String?,
           );
         }).toList();
 
@@ -102,6 +104,7 @@ class _MenuPageState extends State<MenuPage> {
           categories = nonEmptyCats;
           loading = false;
         });
+        _loadCategoryImages();
       }
     } catch (e) {
       setState(() {
@@ -109,6 +112,269 @@ class _MenuPageState extends State<MenuPage> {
         loading = false;
       });
     }
+  }
+
+  // One solid accent color per category
+  static const List<Color> _kCategoryColors = [
+    Color(0xFF6366F1), // indigo
+    Color(0xFF0D9488), // teal
+    Color(0xFFF59E0B), // amber
+    Color(0xFFE11D48), // rose
+    Color(0xFF10B981), // emerald
+    Color(0xFF7C3AED), // violet
+    Color(0xFF2563EB), // blue
+    Color(0xFFDB2777), // pink
+  ];
+
+  Future<void> _loadCategoryImages() async {
+    // Only fetch from Unsplash for categories that have no image_url from the DB
+    final needsImage = categories.where((c) => c.imageUrl == null || c.imageUrl!.isEmpty).toList();
+    if (needsImage.isEmpty) return;
+    final updated = await Future.wait(
+      categories.map((cat) async {
+        if (cat.imageUrl != null && cat.imageUrl!.isNotEmpty) return cat;
+        final img = await UnsplashService.getCategoryImage(cat.name);
+        return cat.copyWith(imageUrl: img);
+      }),
+    );
+    if (mounted) setState(() => categories = updated);
+  }
+
+  Widget _buildCategoryTile(Category cat, int idx) {
+    final Color color = _kCategoryColors[idx % _kCategoryColors.length];
+    final availableItems = cat.items.where((i) => i.available).toList();
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      elevation: 2,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: idx == 0,
+          tilePadding: EdgeInsets.zero,
+          iconColor: Colors.white,
+          collapsedIconColor: Colors.white,
+          title: _buildCategoryHeader(cat, color, availableItems.length),
+          children: availableItems.map((item) => _buildItemTile(item, color)).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryHeader(Category cat, Color color, int count) {
+    return SizedBox(
+      height: 90,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (cat.imageUrl != null)
+            Image.network(
+              cat.imageUrl!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(color: color),
+            )
+          else
+            Container(color: color),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [color.withOpacity(0.25), color.withOpacity(0.80)],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 52, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  cat.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    shadows: [Shadow(blurRadius: 4, color: Colors.black38)],
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.25),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.white.withOpacity(0.5), width: 0.5),
+                  ),
+                  child: Text('$count items',
+                      style: const TextStyle(color: Colors.white, fontSize: 11)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildItemTile(MenuItem item, Color catColor) {
+    if (item.hasVariants && item.variants.isNotEmpty) {
+      return _buildVariantItem(item, catColor);
+    }
+    return _buildSimpleItem(item, catColor);
+  }
+
+  Widget _buildSimpleItem(MenuItem item, Color catColor) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+      title: Row(children: [
+        if (item.itemNumber != null && item.itemNumber!.isNotEmpty) ...[  
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: catColor,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(item.itemNumber!,
+                style: const TextStyle(
+                    fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+          ),
+        ],
+        Expanded(
+            child: Text(item.name,
+                style: const TextStyle(fontWeight: FontWeight.w500))),
+      ]),
+      subtitle: item.description?.isNotEmpty == true ? Text(item.description!) : null,
+      trailing: item.price != null
+          ? Row(mainAxisSize: MainAxisSize.min, children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text('\u20ac${item.price!.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white)),
+              ),
+              const SizedBox(width: 6),
+              IconButton(
+                icon: Icon(Icons.add_shopping_cart, color: catColor),
+                onPressed: () {
+                  setState(() {
+                    cart.addItem(CartItem(
+                      itemId: item.id,
+                      itemName: item.name,
+                      itemNumber: item.itemNumber,
+                      variantId: null,
+                      variantName: null,
+                      price: item.price!,
+                      quantity: 1,
+                    ));
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('${item.name} added to cart'),
+                    duration: const Duration(seconds: 1),
+                  ));
+                },
+              ),
+            ])
+          : null,
+    );
+  }
+
+  Widget _buildVariantItem(MenuItem item, Color catColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                if (item.itemNumber != null && item.itemNumber!.isNotEmpty) ...[  
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                        color: catColor, borderRadius: BorderRadius.circular(6)),
+                    child: Text(item.itemNumber!,
+                        style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white)),
+                  ),
+                ],
+                Expanded(
+                    child: Text(item.name,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w500, fontSize: 15))),
+              ]),
+              if (item.description?.isNotEmpty == true)
+                Padding(
+                  padding: const EdgeInsets.only(top: 3),
+                  child: Text(item.description!,
+                      style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                ),
+            ],
+          ),
+        ),
+        ...item.variants.map((variant) => ListTile(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 40, vertical: 2),
+              title: Text(variant.name, style: const TextStyle(fontSize: 14)),
+              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text('\u20ac${variant.price.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white)),
+                ),
+                const SizedBox(width: 6),
+                IconButton(
+                  icon:
+                      Icon(Icons.add_shopping_cart, color: catColor, size: 20),
+                  onPressed: () {
+                    setState(() {
+                      cart.addItem(CartItem(
+                        itemId: item.id,
+                        itemName: item.name,
+                        itemNumber: item.itemNumber,
+                        variantId: variant.id,
+                        variantName: variant.name,
+                        price: variant.price,
+                        quantity: 1,
+                      ));
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content:
+                          Text('${item.name} (${variant.name}) added to cart'),
+                      duration: const Duration(seconds: 1),
+                    ));
+                  },
+                ),
+              ]),
+            )),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24),
+          child: Divider(),
+        ),
+      ],
+    );
   }
 
   void _showRestaurantInfo(BuildContext context) {
@@ -521,13 +787,7 @@ class _MenuPageState extends State<MenuPage> {
     return Scaffold(
       appBar: AppBar(
         flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.deepPurple.shade600, Colors.deepPurple.shade400, Colors.purpleAccent],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
+          color: Colors.teal,
           child: SafeArea(
             child: Center(
               child: Container(
@@ -608,18 +868,9 @@ class _MenuPageState extends State<MenuPage> {
                             top: 8,
                             child: Container(
                               padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [Colors.orange.shade400, Colors.deepOrange.shade500],
-                                ),
+                              decoration: const BoxDecoration(
+                                color: Colors.orange,
                                 shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.orange.withOpacity(0.6),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
                               ),
                               constraints: const BoxConstraints(
                                 minWidth: 20,
@@ -649,17 +900,7 @@ class _MenuPageState extends State<MenuPage> {
       body: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 1200),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFFF5F7FA),
-                Colors.purple.shade50.withOpacity(0.3),
-                Colors.blue.shade50.withOpacity(0.3),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
+          color: const Color(0xFFF5F7FA),
           child: loading
               ? const Center(child: CircularProgressIndicator())
               : errorMessage != null
@@ -673,330 +914,9 @@ class _MenuPageState extends State<MenuPage> {
                       : ListView.builder(
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           itemCount: categories.length,
-                          itemBuilder: (context, idx) {
-                        final cat = categories[idx];
-                        // Define gradient colors for each category
-                        final gradientColors = [
-                          [Colors.purple.shade400, Colors.deepPurple.shade500],
-                          [Colors.blue.shade400, Colors.indigo.shade500],
-                          [Colors.teal.shade400, Colors.cyan.shade500],
-                          [Colors.orange.shade400, Colors.deepOrange.shade500],
-                          [Colors.pink.shade400, Colors.red.shade500],
-                          [Colors.green.shade400, Colors.lightGreen.shade600],
-                        ];
-                        final colorSet = gradientColors[idx % gradientColors.length];
-                        
-                        return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            gradient: LinearGradient(
-                              colors: [Colors.white, colorSet[0].withOpacity(0.05)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: colorSet[0].withOpacity(0.15),
-                                blurRadius: 6,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: ExpansionTile(
-                              initiallyExpanded: idx == 0,
-                              backgroundColor: Colors.transparent,
-                              collapsedBackgroundColor: Colors.transparent,
-                              tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                              title: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(colors: colorSet),
-                                      borderRadius: BorderRadius.circular(10),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: colorSet[1].withOpacity(0.4),
-                                          blurRadius: 4,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: const Icon(Icons.restaurant_menu, color: Colors.white, size: 20),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      cat.name,
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w700,
-                                        foreground: Paint()
-                                          ..shader = LinearGradient(
-                                            colors: colorSet,
-                                          ).createShader(const Rect.fromLTWH(0.0, 0.0, 200.0, 70.0)),
-                                      ),
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(colors: colorSet),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      '${cat.items.where((item) => item.available).length} items',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              children: cat.items
-                                  .where((item) => item.available)
-                                  .map((item) {
-                            if (item.hasVariants && item.variants.isNotEmpty) {
-                              // Item with variants (sizes)
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                        32, 16, 32, 8),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            if (item.itemNumber != null && item.itemNumber!.isNotEmpty)
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                                margin: const EdgeInsets.only(right: 8),
-                                                decoration: BoxDecoration(
-                                                  gradient: LinearGradient(colors: colorSet),
-                                                  borderRadius: BorderRadius.circular(8),
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: colorSet[1].withOpacity(0.3),
-                                                      blurRadius: 3,
-                                                      offset: const Offset(0, 2),
-                                                    ),
-                                                  ],
-                                                ),
-                                                child: Text(
-                                                  item.itemNumber!,
-                                                  style: const TextStyle(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                              ),
-                                            Expanded(
-                                              child: Text(
-                                                item.name,
-                                                style: const TextStyle(
-                                                    fontWeight: FontWeight.w500,
-                                                    fontSize: 16),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        if (item.description != null &&
-                                            item.description!.isNotEmpty)
-                                          Padding(
-                                            padding:
-                                                const EdgeInsets.only(top: 4),
-                                            child: Text(
-                                              item.description!,
-                                              style: TextStyle(
-                                                  color: Colors.grey[600],
-                                                  fontSize: 14),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                  ...item.variants.map((variant) => ListTile(
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal: 48, vertical: 4),
-                                        title: Text(variant.name,
-                                            style:
-                                                const TextStyle(fontSize: 14)),
-                                        trailing: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                              decoration: BoxDecoration(
-                                                gradient: LinearGradient(colors: [Colors.green.shade400, Colors.teal.shade500]),
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                              child: Text(
-                                                '€${variant.price.toStringAsFixed(2)}',
-                                                style: const TextStyle(
-                                                    fontSize: 14,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.white),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Container(
-                                              decoration: BoxDecoration(
-                                                gradient: LinearGradient(colors: colorSet),
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                              child: IconButton(
-                                                icon: const Icon(
-                                                    Icons.add_shopping_cart,
-                                                    size: 20,
-                                                    color: Colors.white),
-                                                onPressed: () {
-                                                setState(() {
-                                                  cart.addItem(CartItem(
-                                                    itemId: item.id,
-                                                    itemName: item.name,
-                                                    itemNumber: item.itemNumber,
-                                                    variantId: variant.id,
-                                                    variantName: variant.name,
-                                                    price: variant.price,
-                                                    quantity: 1,
-                                                  ));
-                                                });
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                        '${item.name} (${variant.name}) added to cart'),
-                                                    duration: const Duration(
-                                                        seconds: 1),
-                                                  ),
-                                                );
-                                              },
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    )),
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: 32),
-                                    child: Divider(),
-                                  ),
-                                ],
-                              );
-                            } else {
-                              // Regular item without variants
-                              return ListTile(
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 32, vertical: 8),
-                                title: Row(
-                                  children: [
-                                    if (item.itemNumber != null && item.itemNumber!.isNotEmpty)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                        margin: const EdgeInsets.only(right: 8),
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(colors: colorSet),
-                                          borderRadius: BorderRadius.circular(8),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: colorSet[1].withOpacity(0.3),
-                                              blurRadius: 3,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Text(
-                                          item.itemNumber!,
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ),
-                                    Expanded(
-                                      child: Text(item.name,
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.w500)),
-                                    ),
-                                  ],
-                                ),
-                                subtitle: item.description != null &&
-                                        item.description!.isNotEmpty
-                                    ? Text(item.description!)
-                                    : null,
-                                trailing: item.price != null
-                                    ? Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(colors: [Colors.green.shade400, Colors.teal.shade500]),
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              '€${item.price!.toStringAsFixed(2)}',
-                                              style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Container(
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(colors: colorSet),
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: IconButton(
-                                              icon: const Icon(
-                                                  Icons.add_shopping_cart,
-                                                  color: Colors.white),
-                                              onPressed: () {
-                                                setState(() {
-                                                  cart.addItem(CartItem(
-                                                    itemId: item.id,
-                                                    itemName: item.name,
-                                                    itemNumber: item.itemNumber,
-                                                    variantId: null,
-                                                    variantName: null,
-                                                    price: item.price!,
-                                                    quantity: 1,
-                                                  ));
-                                                });
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                        '${item.name} added to cart'),
-                                                    duration: const Duration(
-                                                        seconds: 1),
-                                                  ),
-                                                );
-                                              },
-                                            ),
-                                          ),
-                                        ],
-                                      )
-                                    : null,
-                              );
-                            }
-                          }).toList(),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                          itemBuilder: (context, idx) =>
+                              _buildCategoryTile(categories[idx], idx),
+                        ),
         ),
       ),
     );

@@ -11,8 +11,14 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+interface ImageInput {
+  base64: string
+  mediaType: string
+}
+
 interface RequestBody {
   pdfBase64?: string
+  images?: ImageInput[]
   prompt?: string
 }
 
@@ -30,7 +36,16 @@ interface AnthropicContentDocument {
   }
 }
 
-type AnthropicContent = AnthropicContentText | AnthropicContentDocument
+interface AnthropicContentImage {
+  type: 'image'
+  source: {
+    type: 'base64'
+    media_type: string
+    data: string
+  }
+}
+
+type AnthropicContent = AnthropicContentText | AnthropicContentDocument | AnthropicContentImage
 
 interface AnthropicMessage {
   role: 'user'
@@ -112,9 +127,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
   try {
     const body = (await req.json()) as RequestBody
     const pdfBase64 = body.pdfBase64
-    if (!pdfBase64) {
+    const images = body.images
+
+    if (!pdfBase64 && (!images || images.length === 0)) {
       return new Response(
-        JSON.stringify({ error: 'pdfBase64 is required' }),
+        JSON.stringify({ error: 'pdfBase64 or images array is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -127,13 +144,38 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // Use custom prompt if provided, otherwise use default
     const promptText = body.prompt || DEFAULT_PROMPT
 
+    // Build content blocks depending on file type
+    const isPdf = !!pdfBase64
+    const fileContentBlocks: AnthropicContent[] = isPdf
+      ? [
+          {
+            type: 'document',
+            source: {
+              type: 'base64',
+              media_type: 'application/pdf',
+              data: pdfBase64!
+            }
+          } as AnthropicContentDocument
+        ]
+      : (images ?? []).map(
+          (img): AnthropicContentImage => ({
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: img.mediaType || 'image/jpeg',
+              data: img.base64
+            }
+          })
+        )
+
     // Call Anthropic API
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': anthropicApiKey,
-        'anthropic-version': '2023-06-01'
+        'anthropic-version': '2023-06-01',
+        ...(isPdf ? { 'anthropic-beta': 'pdfs-2024-09-25' } : {})
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
@@ -145,14 +187,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
               type: 'text',
               text: promptText
             },
-            {
-              type: 'document',
-              source: {
-                type: 'base64',
-                media_type: 'application/pdf',
-                data: pdfBase64
-              }
-            }
+            ...fileContentBlocks
           ]
         }]
       } as AnthropicRequestBody)

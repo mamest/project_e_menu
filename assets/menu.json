@@ -2,23 +2,56 @@
   "categories": [
     {
       "name": "Starters",
+      "imageUrl": "https://images.unsplash.com/photo-1541014741259-de529411b96a?w=600&h=200&fit=crop&auto=format",
       "items": [
-        {"name": "Bruschetta", "price": 4.5, "description": "Toasted bread with tomatoes."},
-        {"name": "Soup of the day", "price": 3.9, "description": "Ask staff for today's soup."}
+        {"name": "Bruschetta", "item_number": "1", "price": 4.5, "description": "Toasted bread with tomatoes and fresh basil."},
+        {"name": "Soup of the Day", "item_number": "2", "price": 3.9, "description": "Ask staff for today's soup."},
+        {"name": "Garlic Bread", "item_number": "3", "price": 2.9, "description": "Toasted ciabatta with herb butter."}
       ]
     },
     {
       "name": "Mains",
+      "imageUrl": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=200&fit=crop&auto=format",
       "items": [
-        {"name": "Margherita Pizza", "price": 8.5, "description": "Classic tomato & mozzarella."},
-        {"name": "Pasta Carbonara", "price": 9.5, "description": "Creamy pancetta pasta."}
+        {"name": "Margherita Pizza", "item_number": "10", "price": 8.5, "description": "Classic tomato & mozzarella."},
+        {"name": "Pasta Carbonara", "item_number": "11", "price": 9.5, "description": "Creamy pancetta pasta."},
+        {"name": "Grilled Salmon", "item_number": "12", "price": 14.9, "description": "Fresh Atlantic salmon with seasonal vegetables."},
+        {"name": "Steak", "item_number": "13", "description": "200g sirloin, choice of side.", "has_variants": true,
+          "variants": [
+            {"name": "Medium Rare", "price": 18.9},
+            {"name": "Medium", "price": 18.9},
+            {"name": "Well Done", "price": 18.9}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Desserts",
+      "imageUrl": "https://images.unsplash.com/photo-1551024601-bec78aea704b?w=600&h=200&fit=crop&auto=format",
+      "items": [
+        {"name": "Tiramisu", "item_number": "20", "price": 5.5, "description": "Classic Italian dessert with mascarpone."},
+        {"name": "Chocolate Lava Cake", "item_number": "21", "price": 6.5, "description": "Warm cake with molten chocolate centre."},
+        {"name": "Ice Cream", "item_number": "22", "price": 3.9, "description": "3 scoops – ask for today's flavours."}
       ]
     },
     {
       "name": "Drinks",
+      "imageUrl": "https://images.unsplash.com/photo-1544145945-f90425340c7e?w=600&h=200&fit=crop&auto=format",
       "items": [
-        {"name": "Mineral Water", "price": 1.5, "description": "Still or sparkling."},
-        {"name": "Soda", "price": 2.0, "description": "Coke, Fanta, Sprite."}
+        {"name": "Mineral Water", "item_number": "30", "price": 1.5, "description": "Still or sparkling (0.5 l)."},
+        {"name": "Soft Drinks", "item_number": "31", "price": 2.5, "description": "Coke, Fanta, Sprite, Juice."},
+        {"name": "Beer", "item_number": "32", "description": "Draught or bottle.", "has_variants": true,
+          "variants": [
+            {"name": "0.3 l", "price": 3.5},
+            {"name": "0.5 l", "price": 4.9}
+          ]
+        },
+        {"name": "House Wine", "item_number": "33", "description": "Red, white or rosé.", "has_variants": true,
+          "variants": [
+            {"name": "Glass (0.2 l)", "price": 4.5},
+            {"name": "Bottle (0.75 l)", "price": 16.9}
+          ]
+        }
       ]
     }
   ]
