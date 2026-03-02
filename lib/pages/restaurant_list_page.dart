@@ -541,7 +541,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                       style: TextStyle(
                         fontWeight:
                             isToday ? FontWeight.bold : FontWeight.normal,
-                        color: isToday ? Colors.teal : Colors.black87,
+                        color: isToday ? const Color(0xFF7C3AED) : Colors.black87,
                       ),
                     ),
                   ),
@@ -550,7 +550,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                     style: TextStyle(
                       fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
                       color: isToday
-                          ? Colors.teal
+                          ? const Color(0xFF7C3AED)
                           : (hours == 'Closed' ? Colors.red : Colors.black87),
                     ),
                   ),
@@ -585,7 +585,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
               colors: [
                 const Color(0xFFF5F7FA),
                 Colors.purple.shade50.withOpacity(0.3),
-                Colors.blue.shade50.withOpacity(0.3),
+                const Color(0xFFEDE9FE).withOpacity(0.4),
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -601,13 +601,13 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.teal.shade400, Colors.cyan.shade400],
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
                     ),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.teal.withOpacity(0.4),
+                        color: const Color(0xFF7C3AED).withOpacity(0.4),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -725,11 +725,11 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                                           height: 32,
                                           fit: BoxFit.cover,
                                           errorBuilder: (context, error, stackTrace) {
-                                            return const Icon(Icons.person, color: Colors.teal);
+                                            return const Icon(Icons.person, color: Color(0xFF7C3AED));
                                           },
                                         ),
                                       )
-                                    : const Icon(Icons.person, color: Colors.teal),
+                                    : const Icon(Icons.person, color: Color(0xFF7C3AED)),
                               ),
                               onSelected: (value) async {
                                 if (value == 'logout') {
@@ -857,7 +857,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.white, Colors.purple.shade50, Colors.blue.shade50],
+            colors: [Colors.white, Colors.purple.shade50, const Color(0xFFEDE9FE)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -939,21 +939,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
             ),
           ),
         ),
-        // Gradient overlay for better text visibility if needed
-        Container(
-          height: 200,
-          decoration: BoxDecoration(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-            gradient: LinearGradient(
-              colors: [Colors.transparent, Colors.black.withOpacity(0.2)],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
-        ),
+
       ],
     );
   }
@@ -980,8 +966,8 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
         if (isOwner)
           Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.orange.shade400, Colors.deepOrange.shade400],
+              gradient: const LinearGradient(
+                colors: [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
               ),
               borderRadius: BorderRadius.circular(12),
             ),
@@ -1011,11 +997,11 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         gradient:
-            const LinearGradient(colors: [Colors.orange, Colors.deepOrange]),
+            const LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFF7C3AED)]),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.orange.withOpacity(0.3),
+            color: const Color(0xFF7C3AED).withOpacity(0.3),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -1044,11 +1030,11 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         gradient:
-            const LinearGradient(colors: [Colors.green, Colors.lightGreen]),
+            const LinearGradient(colors: [Color(0xFF7C3AED), Color(0xFF6D28D9)]),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.green.withOpacity(0.3),
+            color: const Color(0xFF7C3AED).withOpacity(0.3),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -1098,14 +1084,14 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
       onTap: () => _launchMaps(restaurant.address),
       child: Row(
         children: [
-          const Icon(Icons.location_on, size: 14, color: Colors.blue),
+          const Icon(Icons.location_on, size: 14, color: Color(0xFF7C3AED)),
           const SizedBox(width: 4),
           Expanded(
             child: Text(
               restaurant.address,
               style: const TextStyle(
                 fontSize: 12,
-                color: Colors.blue,
+                color: Color(0xFF7C3AED),
                 decoration: TextDecoration.underline,
               ),
             ),
@@ -1120,13 +1106,13 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
       onTap: () => _launchPhone(restaurant.phone!),
       child: Row(
         children: [
-          const Icon(Icons.phone, size: 14, color: Colors.blue),
+          const Icon(Icons.phone, size: 14, color: Color(0xFF7C3AED)),
           const SizedBox(width: 4),
           Text(
             restaurant.phone!,
             style: const TextStyle(
               fontSize: 12,
-              color: Colors.blue,
+              color: Color(0xFF7C3AED),
               decoration: TextDecoration.underline,
             ),
           ),
@@ -1140,13 +1126,13 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
       onTap: () => _showOpeningHours(context, restaurant),
       child: Row(
         children: [
-          const Icon(Icons.access_time, size: 14, color: Colors.blue),
+          const Icon(Icons.access_time, size: 14, color: Color(0xFF7C3AED)),
           const SizedBox(width: 4),
           Text(
             'Today: ${restaurant.getTodayHours()}',
             style: const TextStyle(
               fontSize: 12,
-              color: Colors.blue,
+              color: Color(0xFF7C3AED),
               decoration: TextDecoration.underline,
             ),
           ),
@@ -1266,9 +1252,9 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.teal.shade50,
+        color: const Color(0xFFEDE9FE),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.teal.shade200),
+        border: Border.all(color: const Color(0xFFDDD6FE)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1292,7 +1278,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                       decoration: InputDecoration(
                         hintText: 'Enter address or coordinates',
                         prefixIcon:
-                            const Icon(Icons.location_on, color: Colors.teal),
+                            const Icon(Icons.location_on, color: Color(0xFF7C3AED)),
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8)),
                         filled: true,
@@ -1306,7 +1292,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                   itemBuilder: (context, suggestion) {
                     return ListTile(
                       leading:
-                          const Icon(Icons.location_on, color: Colors.teal),
+                          const Icon(Icons.location_on, color: Color(0xFF7C3AED)),
                       title: Text(
                         suggestion['display_name'],
                         maxLines: 2,
@@ -1352,7 +1338,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                     : const Icon(Icons.my_location),
                 tooltip: 'Use current location',
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.teal,
+                  backgroundColor: const Color(0xFF7C3AED),
                   foregroundColor: Colors.white,
                   disabledBackgroundColor: Colors.grey.shade300,
                 ),
@@ -1370,7 +1356,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                   max: 20.0,
                   divisions: 19,
                   label: '${radiusKm.toStringAsFixed(0)} km',
-                  activeColor: Colors.teal,
+                  activeColor: const Color(0xFF7C3AED),
                   onChanged: (value) {
                     setState(() {
                       radiusKm = value;
@@ -1398,7 +1384,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
             icon: const Icon(Icons.search),
             label: const Text('Apply Location Filter'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.teal,
+              backgroundColor: const Color(0xFF7C3AED),
               foregroundColor: Colors.white,
             ),
           ),
@@ -1406,10 +1392,10 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                const Icon(Icons.check_circle, color: Color(0xFF7C3AED), size: 16),
                 const SizedBox(width: 4),
                 const Text('Location filter active',
-                    style: TextStyle(fontSize: 12, color: Colors.green)),
+                    style: TextStyle(fontSize: 12, color: Color(0xFF7C3AED))),
                 const Spacer(),
                 TextButton(
                   onPressed: () async {
@@ -1441,7 +1427,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
           filterDeliveryOnly = value ? true : null;
         });
       },
-      activeThumbColor: Colors.teal,
+      activeThumbColor: const Color(0xFF7C3AED),
       contentPadding: EdgeInsets.zero,
     );
   }
@@ -1472,8 +1458,8 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                   }
                 });
               },
-              selectedColor: Colors.teal.shade100,
-              checkmarkColor: Colors.teal,
+              selectedColor: const Color(0xFFDDD6FE),
+              checkmarkColor: const Color(0xFF7C3AED),
             );
           }).toList(),
         ),
@@ -1507,8 +1493,8 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                   }
                 });
               },
-              selectedColor: Colors.teal.shade100,
-              checkmarkColor: Colors.teal,
+              selectedColor: const Color(0xFFDDD6FE),
+              checkmarkColor: const Color(0xFF7C3AED),
             );
           }).toList(),
         ),

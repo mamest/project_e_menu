@@ -32,8 +32,8 @@ class MyApp extends StatelessWidget {
           seedColor: Colors.deepPurple,
           brightness: Brightness.light,
           primary: Colors.deepPurple,
-          secondary: Colors.orangeAccent,
-          tertiary: Colors.teal,
+          secondary: const Color(0xFF8B5CF6),
+          tertiary: const Color(0xFF6D28D9),
         ),
         scaffoldBackgroundColor: const Color(0xFFF5F7FA),
         cardTheme: CardThemeData(

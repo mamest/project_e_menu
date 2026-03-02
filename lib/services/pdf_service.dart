@@ -8,14 +8,14 @@ import '../models/menu_item.dart';
 class PdfService {
   // Same palette used in the frontend (one color per category)
   static final List<PdfColor> _kCategoryColors = [
-    PdfColor.fromHex('6366F1'), // indigo
-    PdfColor.fromHex('0D9488'), // teal
-    PdfColor.fromHex('F59E0B'), // amber
-    PdfColor.fromHex('E11D48'), // rose
-    PdfColor.fromHex('10B981'), // emerald
     PdfColor.fromHex('7C3AED'), // violet
-    PdfColor.fromHex('2563EB'), // blue
-    PdfColor.fromHex('DB2777'), // pink
+    PdfColor.fromHex('6D28D9'), // deep violet
+    PdfColor.fromHex('8B5CF6'), // light violet
+    PdfColor.fromHex('9333EA'), // purple
+    PdfColor.fromHex('4F46E5'), // indigo
+    PdfColor.fromHex('A855F7'), // lavender
+    PdfColor.fromHex('5B21B6'), // dark violet
+    PdfColor.fromHex('6366F1'), // indigo-blue
   ];
 
   // Natural sort comparison for item numbers (handles "1", "2", "10", "1a", "2b" etc.)
@@ -124,10 +124,10 @@ class PdfService {
           style: pw.TextStyle(
             fontSize: 22,
             fontWeight: pw.FontWeight.bold,
-            color: PdfColors.teal700,
+            color: PdfColor.fromHex('7C3AED'),
           ),
         ),
-        pw.Divider(thickness: 1.5, color: PdfColors.teal700),
+        pw.Divider(thickness: 1.5, color: PdfColor.fromHex('7C3AED')),
       ],
     );
   }
@@ -242,15 +242,15 @@ class PdfService {
                 vertical: 2,
               ),
               decoration: pw.BoxDecoration(
-                color: PdfColors.teal50,
+                color: PdfColor.fromHex('EDE9FE'),
                 borderRadius: pw.BorderRadius.circular(3),
-                border: pw.Border.all(color: PdfColors.teal300, width: 0.5),
+                border: pw.Border.all(color: PdfColor.fromHex('8B5CF6'), width: 0.5),
               ),
               child: pw.Text(
                 badge,
                 style: pw.TextStyle(
                   fontSize: 7,
-                  color: PdfColors.teal700,
+                  color: PdfColor.fromHex('7C3AED'),
                   fontWeight: pw.FontWeight.bold,
                 ),
               ),
