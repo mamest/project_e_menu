@@ -62,3 +62,5 @@ supabase/.temp
 *.freezed.dart
 *.mocks.dart
 existing_pdf_menues/*
+.vercel
+.env*.local
