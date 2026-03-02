@@ -13,9 +13,6 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: preview
-      url: ${{ steps.deploy.outputs.url }}
 
     steps:
       - name: Checkout
@@ -27,11 +24,10 @@ jobs:
       - name: Deploy to Preview
         id: deploy
         env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          vercel pull --yes --environment=preview
-          url=$(vercel deploy --yes 2>/dev/null | tail -n1)
+          vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+          url=$(vercel deploy --yes --token=${{ secrets.VERCEL_TOKEN }} 2>/dev/null | tail -n1)
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "Preview URL: $url"
