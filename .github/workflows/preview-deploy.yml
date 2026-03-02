@@ -27,7 +27,24 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-          url=$(vercel deploy --yes --token=${{ secrets.VERCEL_TOKEN }} 2>/dev/null | tail -n1)
-          echo "url=$url" >> "$GITHUB_OUTPUT"
-          echo "Preview URL: $url"
+          TOKEN="${{ secrets.VERCEL_TOKEN }}"
+
+          vercel pull --yes --environment=preview --token="$TOKEN"
+
+          new_url=$(vercel deploy --yes --token="$TOKEN" 2>/dev/null | tail -n1)
+          echo "url=$new_url" >> "$GITHUB_OUTPUT"
+          echo "Preview URL: $new_url"
+
+          # Strip https:// to get bare host for comparison
+          new_host=$(echo "$new_url" | sed 's~https://~~')
+
+          # Delete all other preview deployments for this project
+          curl -s "https://api.vercel.com/v6/deployments?projectId=${VERCEL_PROJECT_ID}&target=preview&limit=100" \
+            -H "Authorization: Bearer $TOKEN" | \
+            jq -r --arg host "$new_host" \
+              '.deployments[] | select(.url != $host) | .uid' | \
+            while read -r uid; do
+              echo "Deleting old deployment: $uid"
+              curl -s -X DELETE "https://api.vercel.com/v13/deployments/$uid" \
+                -H "Authorization: Bearer $TOKEN" > /dev/null
+            done
