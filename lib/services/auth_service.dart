@@ -45,9 +45,13 @@ class AuthService {
     try {
       // For web, use Supabase's native OAuth (redirect flow)
       if (kIsWeb) {
+        // Use only the origin (scheme + host + port) so the redirect URL
+        // matches exactly what is registered in Supabase's allowlist,
+        // regardless of any current path or hash fragment.
+        final redirectTo = Uri.base.origin;
         await _supabase.auth.signInWithOAuth(
           Provider.google,
-          redirectTo: kIsWeb ? Uri.base.toString() : null,
+          redirectTo: redirectTo,
         );
         // On web, this will redirect, so we return true
         return true;

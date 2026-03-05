@@ -1,7 +1,8 @@
+// Make this file a module so its declarations don't clash with other edge functions.
+export {}
+
 declare const Deno: {
-  env: {
-    get(key: string): string | undefined
-  }
+  env: { get(key: string): string | undefined }
   serve(handler: (req: Request) => Response | Promise<Response>): void
 }
 

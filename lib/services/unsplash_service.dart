@@ -3,46 +3,55 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class UnsplashService {
-  /// Fetch a random image URL from Unsplash based on cuisine type
-  /// Returns the image URL or null if fetching fails
+  static String get _proxyBaseUrl {
+    final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
+    return '$supabaseUrl/functions/v1/unsplash-proxy';
+  }
+
+  static Map<String, String> get _headers {
+    final anonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+    return {
+      'Authorization': 'Bearer $anonKey',
+      'apikey': anonKey,
+    };
+  }
+
+  static bool get _isConfigured {
+    final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
+    final anonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+    return supabaseUrl.isNotEmpty && anonKey.isNotEmpty;
+  }
+
+  /// Fetch a random image URL from Unsplash based on cuisine type.
+  /// Routes through the Supabase unsplash-proxy edge function so the
+  /// Unsplash API key never reaches the browser.
   static Future<String?> getRestaurantImage(String? cuisineType) async {
     try {
-      final unsplashApiKey = dotenv.env['UNSPLASH_ACCESS_KEY'];
-      
-      // If no API key, return a placeholder
-      if (unsplashApiKey == null || unsplashApiKey.isEmpty) {
-        print('No Unsplash API key found, using placeholder');
+      if (!_isConfigured) {
+        print('Supabase not configured, using placeholder');
         return _getPlaceholderImage(cuisineType);
       }
 
       // Build search query based on cuisine type
-      // Always start with 'food' to ensure food-related images
       String query = 'food restaurant';
       if (cuisineType != null && cuisineType.isNotEmpty) {
         query = 'food $cuisineType restaurant';
       }
 
-      final encodedQuery = Uri.encodeComponent(query);
-      final url = Uri.parse(
-          'https://api.unsplash.com/photos/random?query=$encodedQuery&orientation=landscape');
+      final url = Uri.parse(_proxyBaseUrl).replace(queryParameters: {
+        'action': 'random',
+        'query': query,
+      });
 
-      final response = await http.get(
-        url,
-        headers: {
-          'Authorization': 'Client-ID $unsplashApiKey',
-        },
-      );
+      final response = await http.get(url, headers: _headers);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        // Get the regular size image URL
         final imageUrl = data['urls']['regular'] as String?;
-        if (imageUrl != null) {
-          return imageUrl;
-        }
+        if (imageUrl != null) return imageUrl;
       }
 
-      print('Failed to fetch Unsplash image: ${response.statusCode}');
+      print('Failed to fetch Unsplash image via proxy: ${response.statusCode}');
       return _getPlaceholderImage(cuisineType);
     } catch (e) {
       print('Error fetching Unsplash image: $e');
@@ -54,16 +63,15 @@ class UnsplashService {
   /// Returns a list of maps with keys: url, thumbUrl, photographer, photographerUrl.
   static Future<List<Map<String, String>>> searchImages(String query, {int count = 12}) async {
     try {
-      final unsplashApiKey = dotenv.env['UNSPLASH_ACCESS_KEY'];
-      if (unsplashApiKey == null || unsplashApiKey.isEmpty) return [];
+      if (!_isConfigured) return [];
 
-      final encodedQuery = Uri.encodeComponent(query);
-      final url = Uri.parse(
-          'https://api.unsplash.com/search/photos?query=$encodedQuery&per_page=$count&orientation=landscape');
-
-      final response = await http.get(url, headers: {
-        'Authorization': 'Client-ID $unsplashApiKey',
+      final url = Uri.parse(_proxyBaseUrl).replace(queryParameters: {
+        'action': 'search',
+        'query': query,
+        'count': '$count',
       });
+
+      final response = await http.get(url, headers: _headers);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -84,22 +92,16 @@ class UnsplashService {
   }
 
   /// Fetch an image URL for a menu category (e.g. "Starters", "Pizza", "Drinks").
-  /// Uses English search terms on Unsplash.
   static Future<String?> getCategoryImage(String categoryName) async {
     try {
-      final unsplashApiKey = dotenv.env['UNSPLASH_ACCESS_KEY'];
-      if (unsplashApiKey == null || unsplashApiKey.isEmpty) {
-        return _getCategoryPlaceholder(categoryName);
-      }
+      if (!_isConfigured) return _getCategoryPlaceholder(categoryName);
 
-      // Always prepend "food" so we get relevant results
-      final query = Uri.encodeComponent('food $categoryName');
-      final url = Uri.parse(
-          'https://api.unsplash.com/photos/random?query=$query&orientation=landscape');
-
-      final response = await http.get(url, headers: {
-        'Authorization': 'Client-ID $unsplashApiKey',
+      final url = Uri.parse(_proxyBaseUrl).replace(queryParameters: {
+        'action': 'random',
+        'query': 'food $categoryName',
       });
+
+      final response = await http.get(url, headers: _headers);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -116,9 +118,7 @@ class UnsplashService {
     return 'https://picsum.photos/seed/food-$seed/600/200';
   }
 
-  /// Returns a placeholder image URL based on cuisine type
   static String _getPlaceholderImage(String? cuisineType) {
-    // Use picsum.photos as a fallback (or could use a local asset)
     final seed = cuisineType?.hashCode ?? 'restaurant';
     return 'https://picsum.photos/seed/$seed/800/600';
   }

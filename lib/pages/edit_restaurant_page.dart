@@ -1,8 +1,16 @@
+import 'dart:convert';
+import 'dart:typed_data';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
+
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/restaurant.dart';
 import '../models/menu_item.dart';
 import '../services/auth_service.dart';
+import '../services/html_menu_service.dart';
 import '../services/unsplash_service.dart';
 import '../widgets/unsplash_picker_dialog.dart';
 
@@ -46,6 +54,8 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
   List<MenuCategory> _categories = [];
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _generatingAiMenu = false;
+  String? _savedMenuHtmlUrl;
   String? _errorMessage;
 
   @override
@@ -68,6 +78,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
     }
     // Payment methods
     _paymentMethods = List<String>.from(widget.restaurant.paymentMethods ?? []);
+    _savedMenuHtmlUrl = widget.restaurant.menuHtmlUrl;
     _loadMenuData();
   }
 
@@ -161,6 +172,165 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
         _errorMessage = 'Error loading menu data: $e';
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _generateAndSaveAiMenu() async {
+    if (_categories.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No menu categories loaded yet.')),
+      );
+      return;
+    }
+    setState(() => _generatingAiMenu = true);
+    try {
+      // Build payload from current local state
+      final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
+      final anonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+      final payload = {
+        'restaurantId': widget.restaurant.id,
+        'supabaseUrl': supabaseUrl,
+        'supabaseAnonKey': anonKey,
+        'restaurant': {
+          'name': _nameController.text,
+          'address': _addressController.text,
+          if (_phoneController.text.isNotEmpty) 'phone': _phoneController.text,
+          if (_emailController.text.isNotEmpty) 'email': _emailController.text,
+          if (_descriptionController.text.isNotEmpty)
+            'description': _descriptionController.text,
+          if (_cuisineTypeController.text.isNotEmpty)
+            'cuisine_type': _cuisineTypeController.text,
+          'delivers': _delivers,
+          if (_openingHours.isNotEmpty) 'opening_hours': _openingHours,
+          if (_paymentMethods.isNotEmpty) 'payment_methods': _paymentMethods,
+          if (_imageUrl != null) 'image_url': _imageUrl,
+        },
+        'categories': _categories
+            .map((cat) => {
+                  'name': cat.name,
+                  'items': cat.items
+                      .map((item) => {
+                            'name': item.name,
+                            if (item.itemNumber != null)
+                              'item_number': item.itemNumber,
+                            if (item.price != null) 'price': item.price,
+                            if (item.description != null)
+                              'description': item.description,
+                            'has_variants': item.hasVariants,
+                            if (item.variants.isNotEmpty)
+                              'variants': item.variants
+                                  .map((v) =>
+                                      {'name': v.name, 'price': v.price})
+                                  .toList(),
+                          })
+                      .toList(),
+                })
+            .toList(),
+      };
+
+      // 1. Generate HTML via edge function
+      final genResponse = await http.post(
+        Uri.parse('$supabaseUrl/functions/v1/menu-html'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $anonKey',
+          'apikey': anonKey,
+        },
+        body: jsonEncode(payload),
+      );
+
+      if (genResponse.statusCode != 200) {
+        throw Exception('Edge function error ${genResponse.statusCode}: ${genResponse.body}');
+      }
+
+      final responseMap = jsonDecode(genResponse.body) as Map<String, dynamic>;
+      if (responseMap.containsKey('error')) {
+        throw Exception('Edge function error: ${responseMap['error']}');
+      }
+
+      final htmlContent = responseMap['html'] as String?;
+      if (htmlContent == null || htmlContent.isEmpty) {
+        throw Exception('Empty HTML returned. Response: $responseMap');
+      }
+
+      // 2. Open preview in new tab (as blob so it renders correctly)
+      final blobBytes = utf8.encode(htmlContent);
+      final blob = html.Blob([blobBytes], 'text/html; charset=utf-8');
+      final blobUrl = html.Url.createObjectUrlFromBlob(blob);
+      html.window.open(blobUrl, '_blank');
+      Future.delayed(const Duration(minutes: 2),
+          () => html.Url.revokeObjectUrl(blobUrl));
+
+      // 3. Ask owner whether to save
+      if (!mounted) return;
+      final shouldSave = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Save AI Menu Design?'),
+          content: const Text(
+              'The menu has opened in a new tab for preview.\n\n'
+              'Save this design so all visitors see it as the "Designed Menu" button?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Discard'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style:
+                  ElevatedButton.styleFrom(backgroundColor: Colors.teal),
+              child: const Text('Save', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldSave != true) return;
+
+      // 4. Upload HTML to Supabase Storage
+      final bytes = Uint8List.fromList(utf8.encode(htmlContent));
+      final path = '${widget.restaurant.id}/menu.html';
+
+      await _supabase.storage.from('menu-designs').uploadBinary(
+            path,
+            bytes,
+            fileOptions: const FileOptions(
+              contentType: 'text/html',
+              upsert: true,
+            ),
+          );
+
+      final publicUrl = _supabase.storage
+          .from('menu-designs')
+          .getPublicUrl(path);
+
+      // 5. Save URL in restaurant record
+      await _supabase
+          .from('restaurants')
+          .update({'menu_html_url': publicUrl})
+          .eq('id', widget.restaurant.id);
+
+      setState(() => _savedMenuHtmlUrl = publicUrl);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('AI menu design saved! Visitors can now view it.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _generatingAiMenu = false);
     }
   }
 
@@ -922,6 +1092,67 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
                 padding: const EdgeInsets.all(16),
               ),
             ),
+            const SizedBox(height: 32),
+            // ── AI Menu Design Section ──────────────────────────────────
+            const Divider(),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.auto_awesome, color: Colors.deepPurple),
+                const SizedBox(width: 8),
+                const Text(
+                  'AI-Designed Menu',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.deepPurple),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _savedMenuHtmlUrl != null
+                  ? 'A design is saved. Generate a new one to replace it.'
+                  : 'Let Claude create a beautifully styled HTML menu. Preview it, then save — visitors will see a "View Designed Menu" button.',
+              style: const TextStyle(fontSize: 13, color: Colors.black54),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: _generatingAiMenu ? null : _generateAndSaveAiMenu,
+                  icon: _generatingAiMenu
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.auto_awesome),
+                  label: Text(_generatingAiMenu
+                      ? 'Generating…'
+                      : _savedMenuHtmlUrl != null
+                          ? 'Regenerate Design'
+                          : 'Generate Design'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 14),
+                  ),
+                ),
+                if (_savedMenuHtmlUrl != null) ...
+                  [
+                    const SizedBox(width: 12),
+                    OutlinedButton.icon(
+                      onPressed: () => HtmlMenuService.openStoredHtml(_savedMenuHtmlUrl!),
+                      icon: const Icon(Icons.open_in_new),
+                      label: const Text('View Saved'),
+                    ),
+                  ],
+              ],
+            ),
+            const SizedBox(height: 24),
           ],
         ),
       ),

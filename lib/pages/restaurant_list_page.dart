@@ -1,12 +1,14 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:http/http.dart' as http;
-import 'package:geolocator/geolocator.dart';
-import 'package:flutter_typeahead/flutter_typeahead.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/cart.dart';
 import '../models/restaurant.dart';
@@ -46,11 +48,17 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
 
   // Auth
   final AuthService _authService = AuthService();
+  late final StreamSubscription<AuthState> _authSubscription;
 
   @override
   void initState() {
     super.initState();
     _initializeApp();
+    // Rebuild the UI whenever the auth state changes (e.g. after OAuth redirect).
+    _authSubscription =
+        Supabase.instance.client.auth.onAuthStateChange.listen((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   Future<void> _initializeApp() async {
@@ -70,6 +78,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
 
   @override
   void dispose() {
+    _authSubscription.cancel();
     _addressController.dispose();
     super.dispose();
   }
@@ -111,7 +120,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
           supabaseUrl.isNotEmpty &&
           supabaseKey.isNotEmpty) {
         var query = Supabase.instance.client.from('restaurants').select(
-            'id, name, address, email, phone, description, image_url, cuisine_type, delivers, opening_hours, payment_methods, latitude, longitude, restaurant_owner_uuid');
+            'id, name, address, email, phone, description, image_url, cuisine_type, delivers, opening_hours, payment_methods, latitude, longitude, restaurant_owner_uuid, menu_html_url');
 
         // Apply server-side location filtering with bounding box
         if (latitude != null && longitude != null && radiusKm != null) {
