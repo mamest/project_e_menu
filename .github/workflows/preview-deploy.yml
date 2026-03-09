@@ -28,12 +28,17 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           TOKEN="${{ secrets.VERCEL_TOKEN }}"
+          STABLE_ALIAS="${{ secrets.VERCEL_PREVIEW_ALIAS }}"
 
           vercel pull --yes --environment=preview --token="$TOKEN"
 
           new_url=$(vercel deploy --yes --token="$TOKEN" 2>/dev/null | tail -n1)
           echo "url=$new_url" >> "$GITHUB_OUTPUT"
-          echo "Preview URL: $new_url"
+          echo "Unique deploy URL: $new_url"
+
+          # Assign stable alias so OAuth redirect URLs never change
+          vercel alias set "$new_url" "$STABLE_ALIAS" --token="$TOKEN"
+          echo "Stable alias: https://$STABLE_ALIAS"
 
           # Strip https:// to get bare host for comparison
           new_host=$(echo "$new_url" | sed 's~https://~~')
