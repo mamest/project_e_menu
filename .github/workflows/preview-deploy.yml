@@ -32,7 +32,7 @@ jobs:
 
           vercel pull --yes --environment=preview --token="$TOKEN"
 
-          new_url=$(vercel deploy --yes --token="$TOKEN" 2>/dev/null | tail -n1)
+          new_url=$(vercel deploy --yes --target=preview --token="$TOKEN" 2>/dev/null | tail -n1)
           echo "url=$new_url" >> "$GITHUB_OUTPUT"
           echo "Unique deploy URL: $new_url"
 
