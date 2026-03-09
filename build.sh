@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Debug: show whether env vars are present (without leaking values)
+echo "SUPABASE_URL set: $([ -n "$SUPABASE_URL" ] && echo YES || echo NO)"
+echo "SUPABASE_ANON_KEY set: $([ -n "$SUPABASE_ANON_KEY" ] && echo YES || echo NO)"
+
 # Create .env file from Vercel environment variables
 echo "SUPABASE_URL=$SUPABASE_URL" > .env
 echo "SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" >> .env
