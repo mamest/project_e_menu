@@ -28,6 +28,7 @@ CREATE TABLE restaurants (
   latitude numeric(10, 8),
   longitude numeric(11, 8),
   restaurant_owner_uuid uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  menu_html_url text,
   created_at timestamptz DEFAULT now()
 );
 
@@ -626,6 +627,12 @@ SELECT setval(pg_get_serial_sequence('item_variants','id'), COALESCE((SELECT MAX
 -- Enable Row Level Security on restaurants table
 ALTER TABLE restaurants ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if re-running
+DROP POLICY IF EXISTS "Allow public read access to restaurants" ON restaurants;
+DROP POLICY IF EXISTS "Allow authenticated users to insert restaurants" ON restaurants;
+DROP POLICY IF EXISTS "Allow owners to update their restaurants" ON restaurants;
+DROP POLICY IF EXISTS "Allow owners to delete their restaurants" ON restaurants;
+
 -- Policy: Anyone can view all restaurants (read access)
 CREATE POLICY "Allow public read access to restaurants"
   ON restaurants
@@ -655,6 +662,14 @@ CREATE POLICY "Allow owners to delete their restaurants"
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE item_variants ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if re-running
+DROP POLICY IF EXISTS "Allow public read access to categories" ON categories;
+DROP POLICY IF EXISTS "Allow public read access to items" ON items;
+DROP POLICY IF EXISTS "Allow public read access to item_variants" ON item_variants;
+DROP POLICY IF EXISTS "Allow owners to manage categories" ON categories;
+DROP POLICY IF EXISTS "Allow owners to manage items" ON items;
+DROP POLICY IF EXISTS "Allow owners to manage item_variants" ON item_variants;
 
 -- Policy: Anyone can read categories, items, and variants
 CREATE POLICY "Allow public read access to categories"
@@ -705,4 +720,84 @@ CREATE POLICY "Allow owners to manage item_variants"
     )
   );
 
+-- ============================================================
+-- USER PROFILES & ROLES
+-- Run this block (or paste into the Supabase SQL editor) to
+-- enable the three-tier role system:
+--   anonymous  – no account, browse only (default)
+--   customer   – free account, save favourites etc.
+--   restaurant_owner – paid €4.99/mo, can create/edit restaurants
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS profiles (
+  id                              uuid REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  role                            text NOT NULL DEFAULT 'customer'
+                                    CHECK (role IN ('customer', 'restaurant_owner')),
+  subscription_status             text
+                                    CHECK (subscription_status IN ('active', 'trialing', 'canceled', 'past_due')),
+  subscription_id                 text,          -- Stripe subscription ID
+  subscription_current_period_end timestamptz,   -- when the current billing period ends
+  stripe_customer_id              text,          -- Stripe customer ID
+  created_at                      timestamptz DEFAULT now(),
+  updated_at                      timestamptz DEFAULT now()
+);
+
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "profiles: own row select" ON profiles;
+DROP POLICY IF EXISTS "profiles: own row insert" ON profiles;
+DROP POLICY IF EXISTS "profiles: own row update" ON profiles;
+
+CREATE POLICY "profiles: own row select"
+  ON profiles FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "profiles: own row insert"
+  ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "profiles: own row update"
+  ON profiles FOR UPDATE USING (auth.uid() = id);
+
+-- Automatically create a 'customer' profile whenever a new user signs up
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.profiles (id, role)
+  VALUES (new.id, 'customer')
+  ON CONFLICT (id) DO NOTHING;
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- ============================================================
+-- STORAGE: menu-designs bucket
+-- Stores AI-generated HTML menu layouts uploaded by restaurant owners
+-- ============================================================
+
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('menu-designs', 'menu-designs', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Drop existing storage policies if re-running
+DROP POLICY IF EXISTS "Public read menu-designs" ON storage.objects;
+DROP POLICY IF EXISTS "Owners can upload menu-designs" ON storage.objects;
+DROP POLICY IF EXISTS "Owners can update menu-designs" ON storage.objects;
+
+CREATE POLICY "Public read menu-designs"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'menu-designs');
+
+CREATE POLICY "Owners can upload menu-designs"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'menu-designs' AND auth.role() = 'authenticated');
+
+CREATE POLICY "Owners can update menu-designs"
+  ON storage.objects FOR UPDATE
+  USING (bucket_id = 'menu-designs' AND auth.role() = 'authenticated');
+
 COMMIT;
+

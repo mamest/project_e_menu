@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+﻿import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 
@@ -50,7 +50,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.teal,
+        backgroundColor: const Color(0xFF7C3AED),
         foregroundColor: Colors.white,
         flexibleSpace: SafeArea(
           child: Center(
@@ -87,7 +87,7 @@ class _LoginPageState extends State<LoginPage> {
               Icon(
                 Icons.restaurant_menu,
                 size: 80,
-                color: Colors.teal,
+                color: const Color(0xFF7C3AED),
               ),
               const SizedBox(height: 24),
 
@@ -96,7 +96,7 @@ class _LoginPageState extends State<LoginPage> {
                 'Welcome to Digital Menu',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.teal[800],
+                      color: const Color(0xFF5B21B6),
                     ),
                 textAlign: TextAlign.center,
               ),
@@ -127,7 +127,7 @@ class _LoginPageState extends State<LoginPage> {
                     child: const Icon(
                       Icons.g_mobiledata,
                       size: 32,
-                      color: Colors.blue,
+                      color: const Color(0xFF7C3AED),
                     ),
                   ),
                   label: const Text(

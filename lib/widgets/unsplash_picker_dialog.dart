@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../services/unsplash_service.dart';
 
 /// A dialog that lets users search Unsplash and pick a photo.
@@ -59,7 +59,7 @@ class _UnsplashPickerDialogState extends State<UnsplashPickerDialog> {
             Container(
               padding: const EdgeInsets.fromLTRB(20, 16, 8, 12),
               decoration: const BoxDecoration(
-                color: Colors.teal,
+                color: const Color(0xFF7C3AED),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
               ),
               child: Row(
@@ -102,7 +102,7 @@ class _UnsplashPickerDialogState extends State<UnsplashPickerDialog> {
                   ElevatedButton(
                     onPressed: () => _search(_searchController.text),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal,
+                      backgroundColor: const Color(0xFF7C3AED),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
@@ -115,7 +115,7 @@ class _UnsplashPickerDialogState extends State<UnsplashPickerDialog> {
             // Photo grid
             Expanded(
               child: _loading
-                  ? const Center(child: CircularProgressIndicator(color: Colors.teal))
+                  ? const Center(child: CircularProgressIndicator(color: const Color(0xFF7C3AED)))
                   : _photos.isEmpty
                       ? Center(
                           child: Text(
@@ -160,10 +160,10 @@ class _UnsplashPickerDialogState extends State<UnsplashPickerDialog> {
                                       decoration: BoxDecoration(
                                         borderRadius: BorderRadius.circular(6),
                                         border: Border.all(
-                                          color: isSelected ? Colors.teal : Colors.transparent,
+                                          color: isSelected ? const Color(0xFF7C3AED) : Colors.transparent,
                                           width: 3,
                                         ),
-                                        color: isSelected ? Colors.teal.withOpacity(0.15) : Colors.transparent,
+                                        color: isSelected ? const Color(0xFF7C3AED).withOpacity(0.15) : Colors.transparent,
                                       ),
                                     ),
                                     if (isSelected)
@@ -172,7 +172,7 @@ class _UnsplashPickerDialogState extends State<UnsplashPickerDialog> {
                                         right: 4,
                                         child: Container(
                                           decoration: const BoxDecoration(
-                                            color: Colors.teal,
+                                            color: const Color(0xFF7C3AED),
                                             shape: BoxShape.circle,
                                           ),
                                           padding: const EdgeInsets.all(2),
@@ -229,7 +229,7 @@ class _UnsplashPickerDialogState extends State<UnsplashPickerDialog> {
                     icon: const Icon(Icons.check),
                     label: const Text('Use this photo'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal,
+                      backgroundColor: const Color(0xFF7C3AED),
                       foregroundColor: Colors.white,
                     ),
                   ),

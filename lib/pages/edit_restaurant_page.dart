@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:typed_data';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
@@ -278,7 +278,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
               style:
-                  ElevatedButton.styleFrom(backgroundColor: Colors.teal),
+                  ElevatedButton.styleFrom(backgroundColor: const Color(0xFF7C3AED)),
               child: const Text('Save', style: TextStyle(color: Colors.white)),
             ),
           ],
@@ -316,7 +316,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('AI menu design saved! Visitors can now view it.'),
-            backgroundColor: Colors.green,
+            backgroundColor: const Color(0xFF7C3AED),
           ),
         );
       }
@@ -360,7 +360,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Restaurant information updated!'),
-            backgroundColor: Colors.green,
+            backgroundColor: const Color(0xFF7C3AED),
           ),
         );
       }
@@ -813,7 +813,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Edit Restaurant'),
-          backgroundColor: Colors.teal,
+          backgroundColor: const Color(0xFF7C3AED),
         ),
         body: const Center(
           child: Padding(
@@ -842,7 +842,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.teal,
+        backgroundColor: const Color(0xFF7C3AED),
         flexibleSpace: Center(
           child: Container(
             constraints: const BoxConstraints(maxWidth: 1200),
@@ -887,7 +887,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
                     child: Container(
                       constraints: const BoxConstraints(maxWidth: 1200),
                       child: const TabBar(
-                        labelColor: Colors.teal,
+                        labelColor: const Color(0xFF7C3AED),
                         tabs: [
                           Tab(icon: Icon(Icons.info_outline), text: 'Restaurant Info'),
                           Tab(icon: Icon(Icons.restaurant_menu), text: 'Menu'),
@@ -939,7 +939,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
               onPressed: _autoSuggestImage,
               icon: const Icon(Icons.refresh, size: 16),
               label: const Text('Auto-suggest'),
-              style: TextButton.styleFrom(foregroundColor: Colors.teal),
+              style: TextButton.styleFrom(foregroundColor: const Color(0xFF7C3AED)),
             ),
             const SizedBox(width: 4),
             ElevatedButton.icon(
@@ -947,7 +947,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
               icon: const Icon(Icons.image_search, size: 16),
               label: const Text('Browse Unsplash'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
+                backgroundColor: const Color(0xFF7C3AED),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
@@ -1073,7 +1073,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
               title: const Text('Offers Delivery'),
               value: _delivers,
               onChanged: (value) => setState(() => _delivers = value),
-              activeColor: Colors.teal,
+              activeColor: const Color(0xFF7C3AED),
             ),
             const SizedBox(height: 16),
             _buildOpeningHoursSection(),
@@ -1087,7 +1087,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
               icon: const Icon(Icons.save),
               label: const Text('Save Restaurant Info'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
+                backgroundColor: const Color(0xFF7C3AED),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.all(16),
               ),
@@ -1197,7 +1197,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
                               _hoursControllers[day]!.text = '';
                             }
                           }),
-                          activeColor: Colors.teal,
+                          activeColor: const Color(0xFF7C3AED),
                         ),
                         const SizedBox(width: 8),
                         if (isOpen)
@@ -1250,10 +1250,10 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
                   _paymentMethods.remove(method);
                 }
               }),
-              selectedColor: Colors.teal.withOpacity(0.2),
-              checkmarkColor: Colors.teal,
+              selectedColor: const Color(0xFF7C3AED).withOpacity(0.2),
+              checkmarkColor: const Color(0xFF7C3AED),
               labelStyle: TextStyle(
-                color: selected ? Colors.teal[800] : null,
+                color: selected ? const Color(0xFF5B21B6) : null,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
               ),
             );
@@ -1288,7 +1288,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
             icon: const Icon(Icons.add),
             label: const Text('Add Category'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.teal,
+              backgroundColor: const Color(0xFF7C3AED),
               foregroundColor: Colors.white,
             ),
           ),
@@ -1341,17 +1341,17 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.image_search, color: Colors.teal),
+                              icon: const Icon(Icons.image_search, color: const Color(0xFF7C3AED)),
                               onPressed: () => _pickCategoryImage(category),
                               tooltip: 'Change category photo',
                             ),
                             IconButton(
-                              icon: const Icon(Icons.add, color: Colors.green),
+                              icon: const Icon(Icons.add, color: const Color(0xFF7C3AED)),
                               onPressed: () => _addItem(category),
                               tooltip: 'Add item',
                             ),
                             IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.blue),
+                              icon: const Icon(Icons.edit, color: const Color(0xFF7C3AED)),
                               onPressed: () => _editCategory(category),
                               tooltip: 'Edit category',
                             ),
@@ -1377,7 +1377,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
                                   leading: Checkbox(
                                     value: item.available,
                                     onChanged: (_) => _toggleItemAvailability(item),
-                                    activeColor: Colors.teal,
+                                    activeColor: const Color(0xFF7C3AED),
                                   ),
                                   title: Row(
                                     children: [
@@ -1386,16 +1386,16 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
                                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                           margin: const EdgeInsets.only(right: 6),
                                           decoration: BoxDecoration(
-                                            color: Colors.teal.withOpacity(0.1),
+                                            color: const Color(0xFF7C3AED).withOpacity(0.1),
                                             borderRadius: BorderRadius.circular(4),
-                                            border: Border.all(color: Colors.teal.withOpacity(0.3)),
+                                            border: Border.all(color: const Color(0xFF7C3AED).withOpacity(0.3)),
                                           ),
                                           child: Text(
                                             item.itemNumber!,
                                             style: TextStyle(
                                               fontSize: 11,
                                               fontWeight: FontWeight.w600,
-                                              color: Colors.teal[700],
+                                              color: const Color(0xFF6D28D9),
                                             ),
                                           ),
                                         ),
@@ -1413,7 +1413,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
                                             : 'Price varies',
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.teal,
+                                          color: const Color(0xFF7C3AED),
                                         ),
                                       ),
                                     ],
@@ -1422,7 +1422,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       IconButton(
-                                        icon: const Icon(Icons.edit, color: Colors.blue),
+                                        icon: const Icon(Icons.edit, color: const Color(0xFF7C3AED)),
                                         onPressed: () => _editItem(category, item),
                                         tooltip: 'Edit item',
                                       ),

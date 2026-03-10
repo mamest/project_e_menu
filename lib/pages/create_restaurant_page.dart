@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service.dart';
 import '../services/geocoding_service.dart';
@@ -281,7 +281,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                               _hoursControllers[day]!.text = '';
                             }
                           }),
-                          activeColor: Colors.teal,
+                          activeColor: const Color(0xFF7C3AED),
                         ),
                         const SizedBox(width: 8),
                         if (isOpen)
@@ -334,10 +334,10 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                   _paymentMethods.remove(method);
                 }
               }),
-              selectedColor: Colors.teal.withOpacity(0.2),
-              checkmarkColor: Colors.teal,
+              selectedColor: const Color(0xFF7C3AED).withOpacity(0.2),
+              checkmarkColor: const Color(0xFF7C3AED),
               labelStyle: TextStyle(
-                color: selected ? Colors.teal[800] : null,
+                color: selected ? const Color(0xFF5B21B6) : null,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
               ),
             );
@@ -356,13 +356,13 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
             const Text('Restaurant Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
             const Spacer(),
             if (_imageFetching)
-              const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.teal))
+              const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: const Color(0xFF7C3AED)))
             else ...[
               TextButton.icon(
                 onPressed: _autoFetchImage,
                 icon: const Icon(Icons.refresh, size: 16),
                 label: const Text('Auto-suggest'),
-                style: TextButton.styleFrom(foregroundColor: Colors.teal),
+                style: TextButton.styleFrom(foregroundColor: const Color(0xFF7C3AED)),
               ),
               const SizedBox(width: 4),
               ElevatedButton.icon(
@@ -370,7 +370,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                 icon: const Icon(Icons.image_search, size: 16),
                 label: const Text('Browse Unsplash'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal,
+                  backgroundColor: const Color(0xFF7C3AED),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
@@ -602,7 +602,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Restaurant "${_nameController.text.trim()}" created successfully!'),
-            backgroundColor: Colors.green,
+            backgroundColor: const Color(0xFF7C3AED),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -623,7 +623,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
     if (!_authService.isLoggedIn) {
       return Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.teal,
+          backgroundColor: const Color(0xFF7C3AED),
           flexibleSpace: SafeArea(
             child: Center(
               child: Container(
@@ -683,7 +683,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                   icon: const Icon(Icons.arrow_back),
                   label: const Text('Go Back'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
+                    backgroundColor: const Color(0xFF7C3AED),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
@@ -700,7 +700,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.teal,
+        backgroundColor: const Color(0xFF7C3AED),
         flexibleSpace: SafeArea(
           child: Center(
             child: Container(
@@ -737,17 +737,17 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                 children: [
                   // Info card
                   Card(
-                    color: Colors.blue.shade50,
+                    color: const Color(0xFFEDE9FE),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Row(
                         children: [
-                          Icon(Icons.info_outline, color: Colors.blue.shade700),
+                          Icon(Icons.info_outline, color: const Color(0xFF6D28D9)),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               'Create your restaurant menu from scratch. Add categories and items to build your complete menu.',
-                              style: TextStyle(color: Colors.blue.shade700),
+                              style: TextStyle(color: const Color(0xFF6D28D9)),
                             ),
                           ),
                         ],
@@ -888,7 +888,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                         icon: const Icon(Icons.add),
                         label: const Text('Add Category'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.teal,
+                          backgroundColor: const Color(0xFF7C3AED),
                           foregroundColor: Colors.white,
                         ),
                       ),
@@ -954,7 +954,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.image_search, size: 20, color: Colors.teal),
+                              icon: const Icon(Icons.image_search, size: 20, color: const Color(0xFF7C3AED)),
                               onPressed: () => _pickCategoryImage(catIndex),
                               tooltip: 'Change category photo',
                             ),
@@ -996,16 +996,16 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                             margin: const EdgeInsets.only(right: 8),
                                             decoration: BoxDecoration(
-                                              color: Colors.teal.withOpacity(0.1),
+                                              color: const Color(0xFF7C3AED).withOpacity(0.1),
                                               borderRadius: BorderRadius.circular(4),
-                                              border: Border.all(color: Colors.teal.withOpacity(0.3)),
+                                              border: Border.all(color: const Color(0xFF7C3AED).withOpacity(0.3)),
                                             ),
                                             child: Text(
                                               item.itemNumber,
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w600,
-                                                color: Colors.teal[700],
+                                                color: const Color(0xFF6D28D9),
                                               ),
                                             ),
                                           ),
@@ -1042,7 +1042,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                                   icon: const Icon(Icons.add),
                                   label: const Text('Add Item'),
                                   style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.teal,
+                                    foregroundColor: const Color(0xFF7C3AED),
                                   ),
                                 ),
                               ],
@@ -1093,7 +1093,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                     label: Text(_isLoading ? 'Creating Restaurant...' : 'Create Restaurant'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.all(16),
-                      backgroundColor: Colors.green,
+                      backgroundColor: const Color(0xFF7C3AED),
                       foregroundColor: Colors.white,
                       textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),

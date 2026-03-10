@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
@@ -18,6 +18,7 @@ import 'admin_upload_page.dart';
 import 'login_page.dart';
 import 'edit_restaurant_page.dart';
 import 'create_restaurant_page.dart';
+import 'subscription_page.dart';
 
 class RestaurantListPage extends StatefulWidget {
   const RestaurantListPage({super.key});
@@ -29,6 +30,7 @@ class RestaurantListPage extends StatefulWidget {
 class _RestaurantListPageState extends State<RestaurantListPage> {
   List<Restaurant> restaurants = [];
   List<Restaurant> filteredRestaurants = [];
+  int _ownerRestaurantCount = 0;
   bool loading = true;
   String? errorMessage;
 
@@ -56,12 +58,22 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
     _initializeApp();
     // Rebuild the UI whenever the auth state changes (e.g. after OAuth redirect).
     _authSubscription =
-        Supabase.instance.client.auth.onAuthStateChange.listen((_) {
+        Supabase.instance.client.auth.onAuthStateChange.listen((event) async {
+      if (event.event == AuthChangeEvent.signedIn ||
+          event.event == AuthChangeEvent.tokenRefreshed) {
+        await _authService.loadProfile();
+        if (_authService.isRestaurantOwner) await _loadOwnerRestaurants();
+      }
       if (mounted) setState(() {});
     });
   }
 
   Future<void> _initializeApp() async {
+    // Load profile if already signed in
+    if (_authService.isLoggedIn) {
+      await _authService.loadProfile();
+      if (_authService.isRestaurantOwner) await _loadOwnerRestaurants();
+    }
     // Get GPS location first, then load restaurants
     await _getCurrentLocation(showSnackbar: false);
     // Pass location to load only nearby restaurants
@@ -154,6 +166,26 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
         loading = false;
       });
     }
+  }
+
+  /// Fetches all restaurants owned by the current user directly from Supabase,
+  /// bypassing any location/filter constraints on the main list.
+  Future<List<Restaurant>> _loadOwnerRestaurants() async {
+    try {
+      final userId = _authService.currentUser?.id;
+      if (userId == null) return [];
+      final response = await Supabase.instance.client
+          .from('restaurants')
+          .select('id, name, address, email, phone, description, image_url, cuisine_type, delivers, opening_hours, payment_methods, latitude, longitude, restaurant_owner_uuid, menu_html_url')
+          .eq('restaurant_owner_uuid', userId)
+          .order('name');
+      if (response is List) {
+        final list = response.map((r) => Restaurant.fromJson(r as Map<String, dynamic>)).toList();
+        if (mounted) setState(() => _ownerRestaurantCount = list.length);
+        return list;
+      }
+    } catch (_) {}
+    return [];
   }
 
   // ============ FILTERING ============
@@ -578,6 +610,115 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
     );
   }
 
+  void _showSubscriptionRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Restaurant Owner Plan Required'),
+        content: const Text(
+          'Creating and managing menus requires an active Restaurant Owner subscription (€4.99/month).\n\nTap "View Plans" to upgrade your account.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SubscriptionPage()),
+              ).then((_) => setState(() {}));
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF7C3AED),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('View Plans'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============ EDIT RESTAURANT PICKER ============
+
+  Future<void> _showEditRestaurantPicker(List<Restaurant> myRestaurants) async {
+    await showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      isScrollControlled: true,
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.5,
+          minChildSize: 0.3,
+          maxChildSize: 0.85,
+          builder: (_, scrollController) => Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 4),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                child: Text(
+                  'Select Restaurant to Edit',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.deepPurple.shade700,
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  itemCount: myRestaurants.length,
+                  itemBuilder: (_, index) {
+                    final r = myRestaurants[index];
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: const Color(0xFFEDE9FE),
+                        backgroundImage: r.imageUrl != null ? NetworkImage(r.imageUrl!) : null,
+                        child: r.imageUrl == null
+                            ? const Icon(Icons.store, color: Color(0xFF7C3AED))
+                            : null,
+                      ),
+                      title: Text(r.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle: Text(r.address, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      trailing: const Icon(Icons.chevron_right, color: Color(0xFF7C3AED)),
+                      onTap: () async {
+                        Navigator.pop(ctx);
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EditRestaurantPage(restaurant: r),
+                          ),
+                        );
+                        _loadRestaurants();
+                      },
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   // ============ MAIN BUILD ============
 
   @override
@@ -603,81 +744,6 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
           child: _buildBody(displayRestaurants),
         ),
       ),
-      floatingActionButton: _authService.isLoggedIn
-          ? Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF7C3AED).withOpacity(0.4),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: FloatingActionButton.extended(
-                    onPressed: () async {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const CreateRestaurantPage(),
-                        ),
-                      );
-                      if (result == true) {
-                        _loadRestaurants();
-                      }
-                    },
-                    heroTag: 'create_manual',
-                    icon: const Icon(Icons.edit),
-                    label: const Text('Create Manually'),
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.purple.shade400, Colors.deepPurple.shade500],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.purple.withOpacity(0.4),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: FloatingActionButton.extended(
-                    onPressed: () async {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminUploadPage(),
-                        ),
-                      );
-                      if (result == true) {
-                        _loadRestaurants();
-                      }
-                    },
-                    heroTag: 'upload_pdf',
-                    icon: const Icon(Icons.upload_file),
-                    label: const Text('Upload PDF'),
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                  ),
-                ),
-              ],
-            )
-          : null,
     );
   }
 
@@ -749,42 +815,192 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                                       const SnackBar(content: Text('Signed out successfully')),
                                     );
                                   }
+                                } else if (value == 'my_plan') {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const SubscriptionPage(),
+                                    ),
+                                  );
+                                  setState(() {}); // refresh role/subscription state
+                                } else if (value == 'create_manual') {
+                                  if (!_authService.isSubscriptionActive) {
+                                    _showSubscriptionRequiredDialog();
+                                    return;
+                                  }
+                                  final result = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const CreateRestaurantPage(),
+                                    ),
+                                  );
+                                  if (result == true) _loadRestaurants();
+                                } else if (value == 'upload_pdf') {
+                                  if (!_authService.isSubscriptionActive) {
+                                    _showSubscriptionRequiredDialog();
+                                    return;
+                                  }
+                                  final result = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const AdminUploadPage(),
+                                    ),
+                                  );
+                                  if (result == true) _loadRestaurants();
+                                } else if (value == 'edit_restaurant') {
+                                  final myRestaurants = await _loadOwnerRestaurants();
+                                  if (myRestaurants.length == 1 && mounted) {
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => EditRestaurantPage(restaurant: myRestaurants.first),
+                                      ),
+                                    );
+                                    _loadRestaurants();
+                                  } else if (myRestaurants.length > 1 && mounted) {
+                                    await _showEditRestaurantPicker(myRestaurants);
+                                  }
                                 }
                               },
-                              itemBuilder: (context) => [
-                                PopupMenuItem<String>(
-                                  enabled: false,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        _authService.userName ?? 'User',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
+                              itemBuilder: (context) {
+                                final isOwner = _authService.isRestaurantOwner;
+                                final isActive = _authService.isSubscriptionActive;
+                                final myRestaurants = restaurants.where(
+                                  (r) => r.restaurantOwnerUuid == _authService.currentUser?.id,
+                                ).toList();
+                                final count = _ownerRestaurantCount > 0 ? _ownerRestaurantCount : myRestaurants.length;
+                                return [
+                                  // ── User header ──
+                                  PopupMenuItem<String>(
+                                    enabled: false,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _authService.userName ?? 'User',
+                                          style: const TextStyle(fontWeight: FontWeight.bold),
+                                        ),
+                                        Text(
+                                          _authService.userEmail ?? '',
+                                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: isActive
+                                                ? const Color(0xFFEDE9FE)
+                                                : isOwner
+                                                    ? Colors.orange.shade50
+                                                    : Colors.blueGrey.shade50,
+                                            borderRadius: BorderRadius.circular(10),
+                                            border: Border.all(
+                                              color: isActive
+                                                  ? const Color(0xFFA78BFA)
+                                                  : isOwner
+                                                      ? Colors.orange.shade300
+                                                      : Colors.blueGrey.shade300,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            isActive
+                                                ? 'Restaurant Owner'
+                                                : isOwner
+                                                    ? 'Owner (inactive)'
+                                                    : 'Free Customer',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: isActive
+                                                  ? const Color(0xFF6D28D9)
+                                                  : isOwner
+                                                      ? Colors.orange.shade700
+                                                      : Colors.blueGrey.shade700,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuDivider(),
+
+                                  // ── Owner-only actions (only when subscription active) ──
+                                  if (isActive) ...[
+                                    const PopupMenuItem<String>(
+                                      value: 'create_manual',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.edit, color: Color(0xFF7C3AED)),
+                                          SizedBox(width: 8),
+                                          Text('Create Menu Manually'),
+                                        ],
+                                      ),
+                                    ),
+                                    const PopupMenuItem<String>(
+                                      value: 'upload_pdf',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.upload_file, color: Color(0xFF7C3AED)),
+                                          SizedBox(width: 8),
+                                          Text('Create Menu with AI'),
+                                        ],
+                                      ),
+                                    ),
+                                    if (count > 0)
+                                      PopupMenuItem<String>(
+                                        value: 'edit_restaurant',
+                                        child: Row(
+                                          children: [
+                                            const Icon(Icons.store, color: Color(0xFF7C3AED)),
+                                            const SizedBox(width: 8),
+                                            Text(count == 1
+                                                ? 'Edit Restaurant'
+                                                : 'Edit Restaurants ($count)'),
+                                            if (count > 1) ...const [
+                                              Spacer(),
+                                              Icon(Icons.chevron_right, size: 18, color: Colors.grey),
+                                            ],
+                                          ],
                                         ),
                                       ),
-                                      Text(
-                                        _authService.userEmail ?? '',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey[600],
+                                    const PopupMenuDivider(),
+                                  ],
+
+                                  // ── Plan management ──
+                                  PopupMenuItem<String>(
+                                    value: 'my_plan',
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          isActive
+                                              ? Icons.verified
+                                              : Icons.workspace_premium_outlined,
+                                          color: isActive ? const Color(0xFF7C3AED) : const Color(0xFF7C3AED),
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          isActive
+                                              ? 'Manage Subscription'
+                                              : isOwner
+                                                  ? 'Reactivate Subscription'
+                                                  : 'Upgrade to Restaurant Owner',
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                const PopupMenuDivider(),
-                                const PopupMenuItem<String>(
-                                  value: 'logout',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.logout),
-                                      SizedBox(width: 8),
-                                      Text('Sign Out'),
-                                    ],
+                                  const PopupMenuDivider(),
+                                  const PopupMenuItem<String>(
+                                    value: 'logout',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.logout),
+                                        SizedBox(width: 8),
+                                        Text('Sign Out'),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ];
+                              },
                             )
                           : IconButton(
                               icon: const Icon(Icons.login),
@@ -955,8 +1171,6 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
 
   Widget _buildRestaurantHeader(
       Restaurant restaurant, bool hasItems, Cart restaurantCart) {
-    final isOwner = _authService.currentUser?.id == restaurant.restaurantOwnerUuid;
-    
     return Row(
       children: [
         Expanded(
@@ -972,28 +1186,6 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
             ),
           ),
         ),
-        if (isOwner)
-          Container(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.edit, color: Colors.white),
-              onPressed: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => EditRestaurantPage(restaurant: restaurant),
-                  ),
-                );
-                _loadRestaurants(); // Reload to show any changes
-              },
-              tooltip: 'Edit Restaurant',
-            ),
-          ),
         if (hasItems) _buildCartBadge(restaurantCart),
         if (restaurant.delivers) _buildDeliveryBadge(),
       ],

@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -159,7 +159,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Menu extracted successfully! Review and save to database.'),
-            backgroundColor: Colors.green,
+            backgroundColor: const Color(0xFF7C3AED),
             duration: Duration(seconds: 3),
           ),
         );
@@ -353,7 +353,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
                 ),
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context, 'edit'),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF7C3AED)),
                   child: const Text('Edit Restaurant Info'),
                 ),
               ],
@@ -475,7 +475,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Restaurant "${_nameController.text.trim()}" saved successfully!'),
-            backgroundColor: Colors.green,
+            backgroundColor: const Color(0xFF7C3AED),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -566,7 +566,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Menu updated successfully with new data!'),
-            backgroundColor: Colors.green,
+            backgroundColor: const Color(0xFF7C3AED),
             duration: Duration(seconds: 3),
           ),
         );
@@ -725,7 +725,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
     if (!_authService.isLoggedIn) {
       return Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.teal,
+          backgroundColor: const Color(0xFF7C3AED),
           flexibleSpace: SafeArea(
             child: Center(
               child: Container(
@@ -785,7 +785,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
                   icon: const Icon(Icons.arrow_back),
                   label: const Text('Go Back'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
+                    backgroundColor: const Color(0xFF7C3AED),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
@@ -802,7 +802,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.teal,
+        backgroundColor: const Color(0xFF7C3AED),
         flexibleSpace: SafeArea(
           child: Center(
             child: Container(
@@ -837,7 +837,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
               children: [
             // Instructions
             Card(
-              color: Colors.blue.shade50,
+              color: const Color(0xFFEDE9FE),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -845,14 +845,14 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.info_outline, color: Colors.blue.shade700),
+                        Icon(Icons.info_outline, color: const Color(0xFF6D28D9)),
                         const SizedBox(width: 8),
                         Text(
                           'How it works',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Colors.blue.shade700,
+                            color: const Color(0xFF6D28D9),
                           ),
                         ),
                       ],
@@ -879,7 +879,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
               label: const Text('Choose Menu File (PDF / Image)'),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.all(16),
-                backgroundColor: Colors.teal,
+                backgroundColor: const Color(0xFF7C3AED),
                 foregroundColor: Colors.white,
               ),
             ),
@@ -906,7 +906,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Card(
                     child: ListTile(
-                      leading: const Icon(Icons.image, color: Colors.blue),
+                      leading: const Icon(Icons.image, color: const Color(0xFF7C3AED)),
                       title: Text(_imageNameList[i]),
                       subtitle: _imageBytesList.length > 1
                           ? Text('Page ${i + 1} of ${_imageBytesList.length}')
@@ -1167,7 +1167,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
                 label: Text(_isUploading ? 'Saving...' : 'Save to Database'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.all(16),
-                  backgroundColor: Colors.green,
+                  backgroundColor: const Color(0xFF7C3AED),
                   foregroundColor: Colors.white,
                 ),
               ),
