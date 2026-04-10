@@ -3,11 +3,29 @@ class Category {
   final String name;
   final List<MenuItem> items;
   final String? imageUrl;
+  final Map<String, dynamic> translations;
 
-  Category({required this.id, required this.name, required this.items, this.imageUrl});
+  Category({
+    required this.id,
+    required this.name,
+    required this.items,
+    this.imageUrl,
+    this.translations = const {},
+  });
 
-  Category copyWith({String? imageUrl}) {
-    return Category(id: id, name: name, items: items, imageUrl: imageUrl ?? this.imageUrl);
+  Category copyWith({String? imageUrl, Map<String, dynamic>? translations}) {
+    return Category(
+      id: id,
+      name: name,
+      items: items,
+      imageUrl: imageUrl ?? this.imageUrl,
+      translations: translations ?? this.translations,
+    );
+  }
+
+  String localizedName(String locale) {
+    final t = translations[locale] as Map?;
+    return (t?['name'] as String?)?.isNotEmpty == true ? t!['name'] as String : name;
   }
 }
 
@@ -20,6 +38,7 @@ class MenuItem {
   bool available; // Made mutable for toggling availability
   final bool hasVariants;
   final List<ItemVariant> variants;
+  final Map<String, dynamic> translations;
 
   MenuItem({
     required this.id,
@@ -30,6 +49,7 @@ class MenuItem {
     this.available = true,
     this.hasVariants = false,
     this.variants = const [],
+    this.translations = const {},
   });
 
   factory MenuItem.fromJson(
@@ -43,7 +63,19 @@ class MenuItem {
       available: json['available'] as bool? ?? true,
       hasVariants: json['has_variants'] as bool? ?? false,
       variants: variants,
+      translations: (json['translations'] as Map?)?.cast<String, dynamic>() ?? {},
     );
+  }
+
+  String localizedName(String locale) {
+    final t = translations[locale] as Map?;
+    return (t?['name'] as String?)?.isNotEmpty == true ? t!['name'] as String : name;
+  }
+
+  String? localizedDescription(String locale) {
+    final t = translations[locale] as Map?;
+    final localized = t?['description'] as String?;
+    return (localized?.isNotEmpty == true) ? localized : description;
   }
 }
 

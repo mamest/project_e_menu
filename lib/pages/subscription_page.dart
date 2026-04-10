@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 
 class SubscriptionPage extends StatefulWidget {
@@ -21,8 +22,8 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
       await _authService.activateDemoSubscription();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Demo subscription activated for 30 days!'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.demoActivated),
             backgroundColor: const Color(0xFF7C3AED),
           ),
         );
@@ -82,7 +83,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
             ),
           ),
         ),
-        title: const Text('My Plan', style: TextStyle(color: Colors.white)),
+        title: Text(AppLocalizations.of(context)!.myPlan, style: const TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -127,12 +128,12 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
     final Color badgeColor =
         isActive ? const Color(0xFF7C3AED) : (isOwner ? Colors.orange : Colors.blueGrey);
     final String planName =
-        isOwner ? 'Restaurant Owner' : 'Free Customer';
+        isOwner ? AppLocalizations.of(context)!.restaurantOwnerLabel : AppLocalizations.of(context)!.freeCustomerLabel;
     final String subLabel = isActive
-        ? 'Active'
+        ? AppLocalizations.of(context)!.activePlanBadge
         : (isOwner
-            ? (status != null ? status[0].toUpperCase() + status.substring(1) : 'Inactive')
-            : 'Free');
+            ? (status != null ? status[0].toUpperCase() + status.substring(1) : AppLocalizations.of(context)!.inactivePlanBadge)
+            : AppLocalizations.of(context)!.freePlanBadge);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -189,7 +190,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
           if (isActive && subEnd != null) ...[
             const SizedBox(height: 12),
             Text(
-              'Renews on ${_formatDate(subEnd)}',
+              AppLocalizations.of(context)!.renewsOn(_formatDate(subEnd)),
               style: TextStyle(
                 color: Colors.white.withOpacity(0.8),
                 fontSize: 13,
@@ -199,7 +200,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
           if (!isOwner) ...[
             const SizedBox(height: 12),
             Text(
-              'Upgrade to Restaurant Owner to create and manage your menus.',
+              AppLocalizations.of(context)!.upgradeDescription,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.8),
                 fontSize: 13,
@@ -232,9 +233,9 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
           ),
           child: Column(
             children: [
-              const Text(
-                'Restaurant Owner Plan',
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context)!.restaurantOwnerPlanTitle,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF7C3AED),
@@ -257,7 +258,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                           color: Colors.black87)),
                   Padding(
                     padding: const EdgeInsets.only(top: 28),
-                    child: Text('/month',
+                    child: Text(AppLocalizations.of(context)!.perMonth,
                         style: TextStyle(
                             fontSize: 16, color: Colors.grey.shade600)),
                   ),
@@ -265,7 +266,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Cancel anytime',
+                AppLocalizations.of(context)!.cancelAnytime,
                 style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
               ),
             ],
@@ -280,7 +281,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
           OutlinedButton.icon(
             onPressed: _activateDemo,
             icon: const Icon(Icons.science_outlined),
-            label: const Text('Activate Demo (30 days free)'),
+            label: Text(AppLocalizations.of(context)!.activateDemoButton),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.grey.shade600,
               side: BorderSide(color: Colors.grey.shade400),
@@ -309,7 +310,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Your subscription is currently inactive. Reactivate to create and manage menus.',
+                  AppLocalizations.of(context)!.subscriptionInactiveWarning,
                   style: TextStyle(color: Colors.orange.shade800),
                 ),
               ),
@@ -319,13 +320,13 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
         const SizedBox(height: 20),
         _buildFeatureList(active: false),
         const SizedBox(height: 24),
-        _buildSubscribeButton(label: 'Reactivate Subscription'),
+        _buildSubscribeButton(label: AppLocalizations.of(context)!.reactivateSubscription),
         if (kIsWeb) ...[
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: _activateDemo,
             icon: const Icon(Icons.science_outlined),
-            label: const Text('Activate Demo (30 days free)'),
+            label: Text(AppLocalizations.of(context)!.activateDemoButton),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.grey.shade600,
               side: BorderSide(color: Colors.grey.shade400),
@@ -338,12 +339,13 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
   }
 
   Widget _buildFeatureList({required bool active}) {
+    final l10n = AppLocalizations.of(context)!;
     final features = [
-      'Create menus manually',
-      'Upload PDF menus parsed by AI',
-      'Edit restaurant profile',
-      'Manage menu items & categories',
-      'Appear in the restaurant list',
+      l10n.featureCreateManually,
+      l10n.featureUploadPdf,
+      l10n.featureEditProfile,
+      l10n.featureManageItems,
+      l10n.featureAppearInList,
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,7 +368,9 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
     );
   }
 
-  Widget _buildSubscribeButton({String label = 'Subscribe Now'}) {
+  Widget _buildSubscribeButton({String? label}) {
+    final l10n = AppLocalizations.of(context)!;
+    final buttonLabel = label ?? l10n.subscribeNow;
     return _isLoading
         ? const Center(child: CircularProgressIndicator())
         : Container(
@@ -386,7 +390,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
             child: ElevatedButton.icon(
               onPressed: _openStripeCheckout,
               icon: const Icon(Icons.payment),
-              label: Text(label,
+              label: Text(buttonLabel,
                   style: const TextStyle(
                       fontSize: 16, fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
@@ -402,18 +406,18 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
   }
 
   Widget _buildManageButton() {
+    final l10n = AppLocalizations.of(context)!;
     return OutlinedButton.icon(
       onPressed: () {
         // TODO: redirect to Stripe Customer Portal
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Stripe Customer Portal not configured yet. Contact support to manage your subscription.'),
+          SnackBar(
+            content: Text(l10n.stripePortalNotConfigured),
           ),
         );
       },
       icon: const Icon(Icons.manage_accounts),
-      label: const Text('Manage Subscription'),
+      label: Text(l10n.manageSubscription),
       style: OutlinedButton.styleFrom(
         foregroundColor: const Color(0xFF7C3AED),
         side: const BorderSide(color: Color(0xFF7C3AED)),
@@ -424,6 +428,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
   }
 
   Widget _buildFreeSection(bool isOwner) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -435,16 +440,16 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Free Customer Account',
+            l10n.freeCustomerAccountTitle,
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: Colors.grey.shade700,
             ),
           ),
           const SizedBox(height: 8),
-          _featureRow('Browse all restaurant menus', true),
-          _featureRow('Save favourite restaurants', true),
-          _featureRow('No credit card required', true),
+          _featureRow(l10n.featureBrowseMenus, true),
+          _featureRow(l10n.featureSaveFavourites, true),
+          _featureRow(l10n.featureNoCreditCard, true),
         ],
       ),
     );

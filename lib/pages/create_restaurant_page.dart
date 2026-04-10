@@ -1,8 +1,11 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 import '../services/geocoding_service.dart';
+import '../services/translation_service.dart';
 import '../services/unsplash_service.dart';
+import '../utils/payment_utils.dart';
 import '../widgets/unsplash_picker_dialog.dart';
 
 class CreateRestaurantPage extends StatefulWidget {
@@ -16,13 +19,22 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
   static const List<String> _weekDays = [
     'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
   ];
-  static const Map<String, String> _dayLabels = {
-    'monday': 'Monday', 'tuesday': 'Tuesday', 'wednesday': 'Wednesday',
-    'thursday': 'Thursday', 'friday': 'Friday', 'saturday': 'Saturday', 'sunday': 'Sunday',
-  };
   static const List<String> _availablePaymentMethods = [
     'Cash', 'Card', 'EC-Karte', 'PayPal', 'Apple Pay', 'Google Pay', 'Invoice',
   ];
+
+  String _getDayLabel(String day, AppLocalizations l10n) {
+    switch (day) {
+      case 'monday': return l10n.dayMonday;
+      case 'tuesday': return l10n.dayTuesday;
+      case 'wednesday': return l10n.dayWednesday;
+      case 'thursday': return l10n.dayThursday;
+      case 'friday': return l10n.dayFriday;
+      case 'saturday': return l10n.daySaturday;
+      case 'sunday': return l10n.daySunday;
+      default: return day;
+    }
+  }
 
   final _formKey = GlobalKey<FormState>();
   final AuthService _authService = AuthService();
@@ -110,27 +122,28 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
   }
 
   void _editCategory(int index) async {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: _categories[index].name);
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Edit Category Name'),
+        title: Text(l10n.editCategoryNameDialogTitle),
         content: TextFormField(
           controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Category Name',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: l10n.categoryNameLabel,
+            border: const OutlineInputBorder(),
           ),
           autofocus: true,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('Save'),
+            child: Text(l10n.save),
           ),
         ],
       ),
@@ -163,6 +176,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
   }
 
   void _editItem(int categoryIndex, int itemIndex) async {
+    final l10n = AppLocalizations.of(context)!;
     final item = _categories[categoryIndex].items[itemIndex];
     final nameController = TextEditingController(text: item.name);
     final itemNumberController = TextEditingController(text: item.itemNumber);
@@ -172,33 +186,33 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Edit Menu Item'),
+        title: Text(l10n.editMenuItemDialogTitle),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextFormField(
                 controller: itemNumberController,
-                decoration: const InputDecoration(
-                  labelText: 'Item Number',
-                  border: OutlineInputBorder(),
-                  helperText: 'e.g., 1, 2a, 3b',
+                decoration: InputDecoration(
+                  labelText: l10n.itemNumberLabel,
+                  border: const OutlineInputBorder(),
+                  helperText: l10n.itemNumberHelperText,
                 ),
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Item Name *',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.itemNameLabel,
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: priceController,
-                decoration: const InputDecoration(
-                  labelText: 'Price *',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.priceLabel,
+                  border: const OutlineInputBorder(),
                   prefixText: '€',
                 ),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -206,9 +220,9 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: descController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.descriptionLabel,
+                  border: const OutlineInputBorder(),
                 ),
                 maxLines: 3,
               ),
@@ -218,11 +232,11 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Save'),
+            child: Text(l10n.save),
           ),
         ],
       ),
@@ -244,10 +258,11 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
   }
 
   Widget _buildOpeningHoursSection() {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Opening Hours', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        Text(l10n.openingHoursSection, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
@@ -268,7 +283,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                       children: [
                         SizedBox(
                           width: 88,
-                          child: Text(_dayLabels[day]!, style: const TextStyle(fontWeight: FontWeight.w500)),
+                          child: Text(_getDayLabel(day, l10n), style: const TextStyle(fontWeight: FontWeight.w500)),
                         ),
                         Switch(
                           value: isOpen,
@@ -298,8 +313,8 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                             ),
                           )
                         else
-                          const Expanded(
-                            child: Text('Closed', style: TextStyle(color: Colors.grey)),
+                          Expanded(
+                            child: Text(l10n.closed, style: const TextStyle(color: Colors.grey)),
                           ),
                       ],
                     ),
@@ -314,10 +329,11 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
   }
 
   Widget _buildPaymentMethodsSection() {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Payment Methods', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        Text(l10n.paymentMethodsSection, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -325,7 +341,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
           children: _availablePaymentMethods.map((method) {
             final selected = _paymentMethods.contains(method);
             return FilterChip(
-              label: Text(method),
+              label: Text(localizePaymentMethod(method, l10n)),
               selected: selected,
               onSelected: (v) => setState(() {
                 if (v) {
@@ -348,27 +364,28 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
   }
 
   Widget _buildImageSection() {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           children: [
-            const Text('Restaurant Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            Text(l10n.restaurantPhoto, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
             const Spacer(),
             if (_imageFetching)
-              const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: const Color(0xFF7C3AED)))
+              const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF7C3AED)))
             else ...[
               TextButton.icon(
                 onPressed: _autoFetchImage,
                 icon: const Icon(Icons.refresh, size: 16),
-                label: const Text('Auto-suggest'),
+                label: Text(l10n.autoSuggest),
                 style: TextButton.styleFrom(foregroundColor: const Color(0xFF7C3AED)),
               ),
               const SizedBox(width: 4),
               ElevatedButton.icon(
                 onPressed: _openUnsplashPicker,
                 icon: const Icon(Icons.image_search, size: 16),
-                label: const Text('Browse Unsplash'),
+                label: Text(l10n.browseUnsplash),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF7C3AED),
                   foregroundColor: Colors.white,
@@ -412,7 +429,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                 children: [
                   Icon(Icons.add_photo_alternate_outlined, size: 36, color: Colors.grey[400]),
                   const SizedBox(height: 6),
-                  Text('No photo yet — tap "Auto-suggest" or "Browse Unsplash"',
+                  Text(l10n.noPhotoYetHint,
                       style: TextStyle(color: Colors.grey[500], fontSize: 12),
                       textAlign: TextAlign.center),
                 ],
@@ -482,6 +499,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
   }
 
   Future<void> _saveRestaurant() async {
+    final l10n = AppLocalizations.of(context)!;
     // Validate form
     if (!_formKey.currentState!.validate()) {
       return;
@@ -490,7 +508,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
     // Validate at least one category with one item
     if (_categories.isEmpty) {
       setState(() {
-        _errorMessage = 'Please add at least one category';
+        _errorMessage = l10n.pleaseAddCategory;
       });
       return;
     }
@@ -505,7 +523,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
 
     if (!hasItems) {
       setState(() {
-        _errorMessage = 'Please add at least one item to a category';
+        _errorMessage = l10n.pleaseAddItem;
       });
       return;
     }
@@ -560,6 +578,47 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
 
       final restaurantId = restaurantResponse['id'] as int;
 
+      // Pre-translate all categories and items in one AI call
+      final translationService = TranslationService();
+      Map<String, Map<String, dynamic>> translationMaps = {};
+      try {
+        final entries = <Map<String, dynamic>>[];
+        // Include restaurant description in the translation batch
+        final restaurantDesc = _descriptionController.text.trim();
+        if (restaurantDesc.isNotEmpty) {
+          entries.add({'id': 'restaurant_desc', 'name': '', 'description': restaurantDesc});
+        }
+        for (int ci = 0; ci < _categories.length; ci++) {
+          final cat = _categories[ci];
+          if (cat.items.isEmpty) continue;
+          entries.add({'id': 'cat_$ci', 'name': cat.name});
+          for (int ii = 0; ii < cat.items.length; ii++) {
+            final item = cat.items[ii];
+            final e = <String, dynamic>{'id': 'item_${ci}_$ii', 'name': item.name};
+            if (item.description.isNotEmpty) e['description'] = item.description;
+            entries.add(e);
+          }
+        }
+        if (entries.isNotEmpty) {
+          final results = await translationService.translateBatch(entries);
+          for (int i = 0; i < entries.length; i++) {
+            final id = entries[i]['id'] as String;
+            if (results[i].isNotEmpty) translationMaps[id] = results[i];
+          }
+        }
+      } catch (_) {} // translation failure must not block save
+
+      // Apply restaurant description translations
+      final restaurantTranslations = translationMaps['restaurant_desc'] ?? {};
+      if (restaurantTranslations.isNotEmpty) {
+        try {
+          await supabase
+              .from('restaurants')
+              .update({'translations': restaurantTranslations})
+              .eq('id', restaurantId);
+        } catch (_) {}
+      }
+
       // Insert categories and items
       for (int catIndex = 0; catIndex < _categories.length; catIndex++) {
         final category = _categories[catIndex];
@@ -567,6 +626,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
         // Skip empty categories
         if (category.items.isEmpty) continue;
 
+        final catTranslations = translationMaps['cat_$catIndex'] ?? {};
         final categoryResponse = await supabase
             .from('categories')
             .insert({
@@ -574,6 +634,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
               'name': category.name,
               'display_order': catIndex,
               if (category.imageUrl != null) 'image_url': category.imageUrl,
+              if (catTranslations.isNotEmpty) 'translations': catTranslations,
             })
             .select('id')
             .single();
@@ -581,7 +642,9 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
         final categoryId = categoryResponse['id'] as int;
 
         // Insert items
-        for (final item in category.items) {
+        for (int itemIndex = 0; itemIndex < category.items.length; itemIndex++) {
+          final item = category.items[itemIndex];
+          final itemTranslations = translationMaps['item_${catIndex}_$itemIndex'] ?? {};
           await supabase.from('items').insert({
             'category_id': categoryId,
             'name': item.name,
@@ -590,6 +653,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
             'description': item.description.isEmpty ? null : item.description,
             'available': true,
             'has_variants': false,
+            if (itemTranslations.isNotEmpty) 'translations': itemTranslations,
           });
         }
       }
@@ -601,7 +665,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Restaurant "${_nameController.text.trim()}" created successfully!'),
+            content: Text(l10n.restaurantCreatedMessage(_nameController.text.trim())),
             backgroundColor: const Color(0xFF7C3AED),
             duration: const Duration(seconds: 3),
           ),
@@ -611,7 +675,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error creating restaurant: $e';
+        _errorMessage = l10n.errorCreatingRestaurant(e.toString());
         _isLoading = false;
       });
     }
@@ -619,6 +683,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     // Check if user is logged in
     if (!_authService.isLoggedIn) {
       return Scaffold(
@@ -631,10 +696,10 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                 child: Row(
                   children: [
                     const BackButton(color: Colors.white),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Create Restaurant',
-                        style: TextStyle(
+                        l10n.createRestaurantTitle,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 20,
                           fontWeight: FontWeight.w500,
@@ -661,14 +726,14 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Authentication Required',
+                  l10n.authRequiredTitle,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Please sign in to create a restaurant',
+                  l10n.pleaseSignInToCreate,
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 16,
@@ -681,7 +746,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                     Navigator.pop(context);
                   },
                   icon: const Icon(Icons.arrow_back),
-                  label: const Text('Go Back'),
+                  label: Text(l10n.goBack),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF7C3AED),
                     foregroundColor: Colors.white,
@@ -708,10 +773,10 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
               child: Row(
                 children: [
                   const BackButton(color: Colors.white),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Create Restaurant',
-                      style: TextStyle(
+                      l10n.createRestaurantTitle,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.w500,
@@ -746,7 +811,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Create your restaurant menu from scratch. Add categories and items to build your complete menu.',
+                              l10n.createRestaurantInfoText,
                               style: TextStyle(color: const Color(0xFF6D28D9)),
                             ),
                           ),
@@ -758,7 +823,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
 
                   // Restaurant Information Section
                   Text(
-                    'Restaurant Information',
+                    l10n.restaurantInformation,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -772,14 +837,14 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                         children: [
                           TextFormField(
                             controller: _nameController,
-                            decoration: const InputDecoration(
-                              labelText: 'Restaurant Name *',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.restaurant),
+                            decoration: InputDecoration(
+                              labelText: l10n.restaurantNameAsterisk,
+                              border: const OutlineInputBorder(),
+                              prefixIcon: const Icon(Icons.restaurant),
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
-                                return 'Restaurant name is required';
+                                return l10n.restaurantNameRequiredError;
                               }
                               return null;
                             },
@@ -787,15 +852,15 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _addressController,
-                            decoration: const InputDecoration(
-                              labelText: 'Address *',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.location_on),
+                            decoration: InputDecoration(
+                              labelText: l10n.addressAsterisk,
+                              border: const OutlineInputBorder(),
+                              prefixIcon: const Icon(Icons.location_on),
                             ),
                             maxLines: 2,
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
-                                return 'Address is required';
+                                return l10n.addressRequiredError;
                               }
                               return null;
                             },
@@ -806,10 +871,10 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                               Expanded(
                                 child: TextFormField(
                                   controller: _phoneController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Phone',
-                                    border: OutlineInputBorder(),
-                                    prefixIcon: Icon(Icons.phone),
+                                  decoration: InputDecoration(
+                                    labelText: l10n.phoneLabel,
+                                    border: const OutlineInputBorder(),
+                                    prefixIcon: const Icon(Icons.phone),
                                   ),
                                 ),
                               ),
@@ -817,10 +882,10 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                               Expanded(
                                 child: TextFormField(
                                   controller: _emailController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Email',
-                                    border: OutlineInputBorder(),
-                                    prefixIcon: Icon(Icons.email),
+                                  decoration: InputDecoration(
+                                    labelText: l10n.emailLabel,
+                                    border: const OutlineInputBorder(),
+                                    prefixIcon: const Icon(Icons.email),
                                   ),
                                 ),
                               ),
@@ -829,11 +894,11 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _cuisineTypeController,
-                            decoration: const InputDecoration(
-                              labelText: 'Cuisine Type',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.local_dining),
-                              hintText: 'E.g., Italian, Chinese, Mexican',
+                            decoration: InputDecoration(
+                              labelText: l10n.cuisineType,
+                              border: const OutlineInputBorder(),
+                              prefixIcon: const Icon(Icons.local_dining),
+                              hintText: l10n.cuisineTypeHint,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -844,16 +909,16 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
 
                           TextFormField(
                             controller: _descriptionController,
-                            decoration: const InputDecoration(
-                              labelText: 'Description',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.description),
+                            decoration: InputDecoration(
+                              labelText: l10n.descriptionLabel,
+                              border: const OutlineInputBorder(),
+                              prefixIcon: const Icon(Icons.description),
                             ),
                             maxLines: 3,
                           ),
                           const SizedBox(height: 12),
                           SwitchListTile(
-                            title: const Text('Offers Delivery'),
+                            title: Text(l10n.offersDelivery),
                             value: _delivers,
                             onChanged: (value) {
                               setState(() {
@@ -878,7 +943,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Menu Categories & Items',
+                        l10n.menuCategoriesAndItems,
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
@@ -886,7 +951,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                       ElevatedButton.icon(
                         onPressed: _addCategory,
                         icon: const Icon(Icons.add),
-                        label: const Text('Add Category'),
+                        label: Text(l10n.addCategoryButton),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF7C3AED),
                           foregroundColor: Colors.white,
@@ -906,7 +971,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                             Icon(Icons.category_outlined, size: 48, color: Colors.orange.shade700),
                             const SizedBox(height: 12),
                             Text(
-                              'No categories yet',
+                              l10n.noCategoriesCardTitle,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -915,7 +980,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Add at least one category with items to create your menu',
+                              l10n.noCategoriesCardHint,
                               textAlign: TextAlign.center,
                               style: TextStyle(color: Colors.orange.shade700),
                             ),
@@ -970,7 +1035,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                             ),
                           ],
                         ),
-                        subtitle: Text('${category.items.length} items'),
+                        subtitle: Text(l10n.itemCount(category.items.length)),
                         children: [
                           Padding(
                             padding: const EdgeInsets.all(16),
@@ -981,7 +1046,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                                   Padding(
                                     padding: const EdgeInsets.symmetric(vertical: 16),
                                     child: Text(
-                                      'No items in this category',
+                                      l10n.noItemsInCategory,
                                       style: TextStyle(color: Colors.grey[600]),
                                       textAlign: TextAlign.center,
                                     ),
@@ -1040,7 +1105,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                                 OutlinedButton.icon(
                                   onPressed: () => _addItem(catIndex),
                                   icon: const Icon(Icons.add),
-                                  label: const Text('Add Item'),
+                                  label: Text(l10n.addItemButton),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: const Color(0xFF7C3AED),
                                   ),
@@ -1090,7 +1155,7 @@ class _CreateRestaurantPageState extends State<CreateRestaurantPage> {
                             ),
                           )
                         : const Icon(Icons.save),
-                    label: Text(_isLoading ? 'Creating Restaurant...' : 'Create Restaurant'),
+                    label: Text(_isLoading ? l10n.creatingRestaurant : l10n.createRestaurantTitle),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.all(16),
                       backgroundColor: const Color(0xFF7C3AED),

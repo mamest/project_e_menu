@@ -1,0 +1,750 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Digital Menu",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Label for cancel button"
+  },
+  "close": "Close",
+  "@close": {
+    "description": "Label for close button"
+  },
+  "ok": "OK",
+  "@ok": {
+    "description": "Label for OK button"
+  },
+  "openSettings": "Open Settings",
+  "@openSettings": {
+    "description": "Label for open settings button"
+  },
+  "selectLanguage": "Language",
+  "@selectLanguage": {
+    "description": "Title for the language selection dialog"
+  },
+  "languageSystemDefault": "System default",
+  "@languageSystemDefault": {
+    "description": "Option to use the device system language"
+  },
+
+  "signOut": "Sign Out",
+  "@signOut": {
+    "description": "Label for sign out button"
+  },
+  "clearAll": "Clear All",
+  "@clearAll": {
+    "description": "Label for clear all button"
+  },
+  "remove": "Remove",
+  "@remove": {
+    "description": "Label for remove button"
+  },
+
+  "dayMonday": "Monday",
+  "@dayMonday": {
+    "description": "Name of Monday"
+  },
+  "dayTuesday": "Tuesday",
+  "@dayTuesday": {
+    "description": "Name of Tuesday"
+  },
+  "dayWednesday": "Wednesday",
+  "@dayWednesday": {
+    "description": "Name of Wednesday"
+  },
+  "dayThursday": "Thursday",
+  "@dayThursday": {
+    "description": "Name of Thursday"
+  },
+  "dayFriday": "Friday",
+  "@dayFriday": {
+    "description": "Name of Friday"
+  },
+  "daySaturday": "Saturday",
+  "@daySaturday": {
+    "description": "Name of Saturday"
+  },
+  "daySunday": "Sunday",
+  "@daySunday": {
+    "description": "Name of Sunday"
+  },
+
+  "signIn": "Sign In",
+  "@signIn": {
+    "description": "Label for sign in button"
+  },
+  "welcomeTitle": "Welcome to Digital Menu",
+  "@welcomeTitle": {
+    "description": "Welcome screen title"
+  },
+  "signInSubtitle": "Sign in to upload menus and manage your restaurants",
+  "@signInSubtitle": {
+    "description": "Subtitle on the sign in screen"
+  },
+  "signInWithGoogle": "Sign in with Google",
+  "@signInWithGoogle": {
+    "description": "Label for sign in with Google button"
+  },
+  "signInFailed": "Sign-in failed: {message}",
+  "@signInFailed": {
+    "placeholders": { "message": { "type": "String" } }
+  },
+  "continueWithoutSignIn": "Continue without signing in",
+  "@continueWithoutSignIn": {
+    "description": "Label for continue without sign in button"
+  },
+  "signInNoteWeb": "Note: You will be redirected to Google's sign-in page. You can browse restaurants without signing in. Sign in to access upload and management features.",
+  "@signInNoteWeb": {
+    "description": "Informational note on sign in screen for web platform"
+  },
+  "signInNoteMobile": "Note: You can browse restaurants without signing in. Sign in to access upload and management features.",
+  "@signInNoteMobile": {
+    "description": "Informational note on sign in screen for mobile platform"
+  },
+
+  "selectRestaurant": "Select Restaurant",
+  "@selectRestaurant": {
+    "description": "Label for selecting a restaurant"
+  },
+  "noRestaurantsFound": "No restaurants found",
+  "@noRestaurantsFound": {
+    "description": "Message shown when no restaurants are found"
+  },
+  "noRestaurantsMatchFilters": "No restaurants match filters",
+  "@noRestaurantsMatchFilters": {
+    "description": "Message shown when no restaurants match the active filters"
+  },
+  "signedInSuccessfully": "Signed in successfully!",
+  "@signedInSuccessfully": {
+    "description": "Confirmation message after successful sign in"
+  },
+  "signedOutSuccessfully": "Signed out successfully",
+  "@signedOutSuccessfully": {
+    "description": "Confirmation message after successful sign out"
+  },
+
+  "locationServicesDisabled": "Location services are disabled. Please enable them.",
+  "@locationServicesDisabled": {
+    "description": "Message shown when location services are disabled"
+  },
+  "locationPermissionDenied": "Location permission denied",
+  "@locationPermissionDenied": {
+    "description": "Message shown when location permission is denied"
+  },
+  "locationPermissionRequired": "Location Permission Required",
+  "@locationPermissionRequired": {
+    "description": "Title of location permission required dialog"
+  },
+  "locationPermissionMessage": "This app needs location permission to show nearby restaurants. Please enable location permission in your device settings.",
+  "@locationPermissionMessage": {
+    "description": "Body message of location permission required dialog"
+  },
+  "usingCurrentLocation": "Using your current location",
+  "@usingCurrentLocation": {
+    "description": "Confirmation that the current location is being used"
+  },
+  "errorGettingLocation": "Error getting location: {message}",
+  "@errorGettingLocation": {
+    "placeholders": { "message": { "type": "String" } }
+  },
+  "pleaseEnterAddress": "Please enter an address",
+  "@pleaseEnterAddress": {
+    "description": "Validation message asking user to enter an address"
+  },
+  "locationFilterApplied": "Location filter applied",
+  "@locationFilterApplied": {
+    "description": "Confirmation that the location filter was applied"
+  },
+  "addressNotFound": "Address not found. Try entering coordinates instead.",
+  "@addressNotFound": {
+    "description": "Message shown when the entered address could not be found"
+  },
+  "noAddressesFound": "No addresses found. Try entering coordinates like: 52.520007, 13.404954",
+  "@noAddressesFound": {
+    "description": "Message shown when geocoding returns no results"
+  },
+  "geocodingError": "Geocoding error: {message}",
+  "@geocodingError": {
+    "placeholders": { "message": { "type": "String" } }
+  },
+  "geocodingFailed": "Geocoding Failed",
+  "@geocodingFailed": {
+    "description": "Message shown when geocoding fails"
+  },
+  "geocodingInstructions": "Please enter coordinates in format: latitude, longitude",
+  "@geocodingInstructions": {
+    "description": "Instructions for entering coordinates"
+  },
+  "geocodingExample": "Example: 52.520007, 13.404954",
+  "@geocodingExample": {
+    "description": "Example of coordinate format"
+  },
+  "geocodingMapsHint": "Or search for your address on Google Maps and copy the coordinates.",
+  "@geocodingMapsHint": {
+    "description": "Hint to use Google Maps to find coordinates"
+  },
+  "useCurrentLocation": "Use current location",
+  "@useCurrentLocation": {
+    "description": "Label for use current location button"
+  },
+  "filterByLocation": "Filter by Location",
+  "@filterByLocation": {
+    "description": "Label for filter by location option"
+  },
+  "enterAddressOrCoordinates": "Enter address or coordinates",
+  "@enterAddressOrCoordinates": {
+    "description": "Placeholder for address/coordinates input field"
+  },
+  "radius": "Radius: ",
+  "@radius": {
+    "description": "Label for radius input field"
+  },
+  "applyLocationFilter": "Apply Location Filter",
+  "@applyLocationFilter": {
+    "description": "Label for apply location filter button"
+  },
+  "locationFilterActive": "Location filter active",
+  "@locationFilterActive": {
+    "description": "Badge shown when location filter is active"
+  },
+  "deliveryOnly": "Delivery Only",
+  "@deliveryOnly": {
+    "description": "Label for delivery only filter"
+  },
+  "cuisineType": "Cuisine Type",
+  "@cuisineType": {
+    "description": "Label for cuisine type filter"
+  },
+  "paymentMethodsFilter": "Payment Methods",
+  "@paymentMethodsFilter": {
+    "description": "Label for payment methods filter"
+  },
+  "filters": "Filters",
+  "@filters": {
+    "description": "Label for the filters section"
+  },
+  "todayHours": "Today: {hours}",
+  "@todayHours": {
+    "placeholders": { "hours": { "type": "String" } }
+  },
+  "deliveryBadge": "Delivery",
+  "@deliveryBadge": {
+    "description": "Badge label indicating delivery is available"
+  },
+  "openingHoursDialog": "{restaurantName} - Opening Hours",
+  "@openingHoursDialog": {
+    "placeholders": { "restaurantName": { "type": "String" } }
+  },
+
+  "selectRestaurantToEdit": "Select Restaurant to Edit",
+  "@selectRestaurantToEdit": {
+    "description": "Label for selecting a restaurant to edit"
+  },
+  "createMenuManually": "Create Menu Manually",
+  "@createMenuManually": {
+    "description": "Label for create menu manually option"
+  },
+  "createMenuWithAI": "Create Menu with AI",
+  "@createMenuWithAI": {
+    "description": "Label for create menu with AI option"
+  },
+  "editRestaurant": "Edit Restaurant",
+  "@editRestaurant": {
+    "description": "Label for edit restaurant button"
+  },
+  "editRestaurants": "Edit Restaurants ({count})",
+  "@editRestaurants": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "manageSubscription": "Manage Subscription",
+  "@manageSubscription": {
+    "description": "Label for manage subscription button"
+  },
+  "reactivateSubscription": "Reactivate Subscription",
+  "@reactivateSubscription": {
+    "description": "Label for reactivate subscription button"
+  },
+  "upgradeToOwner": "Upgrade to Restaurant Owner",
+  "@upgradeToOwner": {
+    "description": "Label for upgrade to restaurant owner button"
+  },
+  "restaurantOwnerLabel": "Restaurant Owner",
+  "@restaurantOwnerLabel": {
+    "description": "Label for restaurant owner role"
+  },
+  "ownerInactiveLabel": "Owner (inactive)",
+  "@ownerInactiveLabel": {
+    "description": "Label for inactive restaurant owner role"
+  },
+  "freeCustomerLabel": "Free Customer",
+  "@freeCustomerLabel": {
+    "description": "Label for free customer role"
+  },
+  "subscriptionRequiredTitle": "Restaurant Owner Plan Required",
+  "@subscriptionRequiredTitle": {
+    "description": "Title of dialog shown when subscription is required"
+  },
+  "subscriptionRequiredMessage": "Creating and managing menus requires an active Restaurant Owner subscription (€4.99/month).\n\nTap \"View Plans\" to upgrade your account.",
+  "@subscriptionRequiredMessage": {
+    "description": "Body of dialog shown when subscription is required"
+  },
+  "viewPlans": "View Plans",
+  "@viewPlans": {
+    "description": "Label for view plans button"
+  },
+
+  "errorLoadingMenu": "Error loading menu: {error}",
+  "@errorLoadingMenu": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "itemCount": "{count} items",
+  "@itemCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "addedToCart": "{name} added to cart",
+  "@addedToCart": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "addedToCartWithVariant": "{name} ({variant}) added to cart",
+  "@addedToCartWithVariant": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "variant": { "type": "String" }
+    }
+  },
+  "addressLabel": "Address",
+  "@addressLabel": {
+    "description": "Label for address field"
+  },
+  "phoneLabel": "Phone",
+  "@phoneLabel": {
+    "description": "Label for phone field"
+  },
+  "emailLabel": "Email",
+  "@emailLabel": {
+    "description": "Label for email field"
+  },
+  "deliveryAvailable": "Delivery available",
+  "@deliveryAvailable": {
+    "description": "Text indicating delivery is available"
+  },
+  "noDelivery": "No delivery",
+  "@noDelivery": {
+    "description": "Text indicating no delivery is available"
+  },
+  "openingHoursTitle": "Opening Hours:",
+  "@openingHoursTitle": {
+    "description": "Title for opening hours section"
+  },
+  "paymentMethodsTitle": "Payment Methods:",
+  "@paymentMethodsTitle": {
+    "description": "Title for payment methods section"
+  },
+  "closed": "Closed",
+  "@closed": {
+    "description": "Label indicating a restaurant is closed"
+  },
+  "yourCart": "Your Cart",
+  "@yourCart": {
+    "description": "Title for the cart screen"
+  },
+  "cartEmpty": "Your cart is empty",
+  "@cartEmpty": {
+    "description": "Message shown when the cart is empty"
+  },
+  "total": "Total:",
+  "@total": {
+    "description": "Label for total price in cart"
+  },
+  "orderSectionTitle": "Ready to order?",
+  "@orderSectionTitle": {
+    "description": "Title of the order contact section in cart"
+  },
+  "orderSectionSubtitle": "Contact the restaurant to place your order:",
+  "@orderSectionSubtitle": {
+    "description": "Subtitle of the order contact section in cart"
+  },
+  "callToOrder": "Call to order",
+  "@callToOrder": {
+    "description": "Label for call to order button"
+  },
+  "emailToOrder": "Order by email",
+  "@emailToOrder": {
+    "description": "Label for order by email button"
+  },
+  "emailOrderSubject": "Order",
+  "@emailOrderSubject": {
+    "description": "Subject line for order email"
+  },
+  "noContactAvailable": "No contact details available for this restaurant.",
+  "@noContactAvailable": {
+    "description": "Message shown when restaurant has no phone or email"
+  },
+  "compareRestaurants": "Compare",
+  "@compareRestaurants": {
+    "description": "Label for compare restaurants button"
+  },
+  "compareTitle": "Cart Comparison",
+  "@compareTitle": {
+    "description": "Title of the cart comparison sheet"
+  },
+  "compareSubtitle": "Your selections across multiple restaurants",
+  "@compareSubtitle": {
+    "description": "Subtitle of the cart comparison sheet"
+  },
+  "compareItemsCount": "{count} items",
+  "@compareItemsCount": {
+    "description": "Number of items in a compared cart",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "noMenuItemsFound": "No menu items found",
+  "@noMenuItemsFound": {
+    "description": "Message shown when no menu items are found"
+  },
+  "viewDesignedMenu": "View designed menu",
+  "@viewDesignedMenu": {
+    "description": "Label for view designed menu button"
+  },
+
+  "myPlan": "My Plan",
+  "@myPlan": {
+    "description": "Title for the my plan section"
+  },
+  "demoActivated": "Demo subscription activated for 30 days!",
+  "@demoActivated": {
+    "description": "Confirmation message when demo subscription is activated"
+  },
+  "activePlanBadge": "Active",
+  "@activePlanBadge": {
+    "description": "Badge label for an active plan"
+  },
+  "inactivePlanBadge": "Inactive",
+  "@inactivePlanBadge": {
+    "description": "Badge label for an inactive plan"
+  },
+  "freePlanBadge": "Free",
+  "@freePlanBadge": {
+    "description": "Badge label for the free plan"
+  },
+  "renewsOn": "Renews on {date}",
+  "@renewsOn": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "upgradeDescription": "Upgrade to Restaurant Owner to create and manage your menus.",
+  "@upgradeDescription": {
+    "description": "Description encouraging user to upgrade to restaurant owner plan"
+  },
+  "restaurantOwnerPlanTitle": "Restaurant Owner Plan",
+  "@restaurantOwnerPlanTitle": {
+    "description": "Title of the restaurant owner subscription plan"
+  },
+  "perMonth": "/month",
+  "@perMonth": {
+    "description": "Per month pricing suffix"
+  },
+  "cancelAnytime": "Cancel anytime",
+  "@cancelAnytime": {
+    "description": "Note that subscription can be cancelled anytime"
+  },
+  "activateDemoButton": "Activate Demo (30 days free)",
+  "@activateDemoButton": {
+    "description": "Label for activate demo button"
+  },
+  "subscriptionInactiveWarning": "Your subscription is currently inactive. Reactivate to create and manage menus.",
+  "@subscriptionInactiveWarning": {
+    "description": "Warning message shown when subscription is inactive"
+  },
+  "subscribeNow": "Subscribe Now",
+  "@subscribeNow": {
+    "description": "Label for subscribe now button"
+  },
+  "featureCreateManually": "Create menus manually",
+  "@featureCreateManually": {
+    "description": "Feature description for restaurant owner plan"
+  },
+  "featureUploadPdf": "Upload PDF menus parsed by AI",
+  "@featureUploadPdf": {
+    "description": "Feature description for restaurant owner plan"
+  },
+  "featureEditProfile": "Edit restaurant profile",
+  "@featureEditProfile": {
+    "description": "Feature description for restaurant owner plan"
+  },
+  "featureManageItems": "Manage menu items & categories",
+  "@featureManageItems": {
+    "description": "Feature description for restaurant owner plan"
+  },
+  "featureAppearInList": "Appear in the restaurant list",
+  "@featureAppearInList": {
+    "description": "Feature description for restaurant owner plan"
+  },
+  "stripePortalNotConfigured": "Stripe Customer Portal not configured yet. Contact support to manage your subscription.",
+  "@stripePortalNotConfigured": {
+    "description": "Message shown when Stripe customer portal is not configured"
+  },
+  "freeCustomerAccountTitle": "Free Customer Account",
+  "@freeCustomerAccountTitle": {
+    "description": "Title for the free customer account section"
+  },
+  "featureBrowseMenus": "Browse all restaurant menus",
+  "@featureBrowseMenus": {
+    "description": "Feature description for free customer plan"
+  },
+  "featureSaveFavourites": "Save favourite restaurants",
+  "@featureSaveFavourites": {
+    "description": "Feature description for free customer plan"
+  },
+  "featureNoCreditCard": "No credit card required",
+  "@featureNoCreditCard": {
+    "description": "Feature description for free customer plan"
+  },
+
+  "paymentMethodCash": "Cash",
+  "@paymentMethodCash": { "description": "Payment method: Cash" },
+  "paymentMethodCard": "Credit / Debit Card",
+  "@paymentMethodCard": { "description": "Payment method: Credit/Debit Card" },
+  "paymentMethodEcKarte": "EC Card",
+  "@paymentMethodEcKarte": { "description": "Payment method: EC Card" },
+  "paymentMethodPayPal": "PayPal",
+  "@paymentMethodPayPal": { "description": "Payment method: PayPal" },
+  "paymentMethodApplePay": "Apple Pay",
+  "@paymentMethodApplePay": { "description": "Payment method: Apple Pay" },
+  "paymentMethodGooglePay": "Google Pay",
+  "@paymentMethodGooglePay": { "description": "Payment method: Google Pay" },
+  "paymentMethodInvoice": "Invoice",
+  "@paymentMethodInvoice": { "description": "Payment method: Invoice" },
+
+  "supabaseNotConfigured": "Supabase not configured. Please check .env file.",
+  "@supabaseNotConfigured": { "description": "Error shown when Supabase is not configured" },
+  "errorLoadingRestaurants": "Error loading restaurants: {error}",
+  "@errorLoadingRestaurants": { "placeholders": { "error": { "type": "String" } } },
+
+  "add": "Add",
+  "@add": { "description": "Label for add button" },
+  "save": "Save",
+  "@save": { "description": "Label for save button" },
+  "delete": "Delete",
+  "@delete": { "description": "Label for delete button" },
+  "discard": "Discard",
+  "@discard": { "description": "Label for discard button" },
+  "required": "Required",
+  "@required": { "description": "Validation message for required fields" },
+
+  "restaurantName": "Restaurant Name",
+  "@restaurantName": { "description": "Label for restaurant name field" },
+  "restaurantNameAsterisk": "Restaurant Name *",
+  "@restaurantNameAsterisk": { "description": "Label for required restaurant name field" },
+  "restaurantNameRequiredError": "Restaurant name is required",
+  "@restaurantNameRequiredError": { "description": "Validation error for restaurant name field" },
+  "addressAsterisk": "Address *",
+  "@addressAsterisk": { "description": "Label for required address field" },
+  "addressRequiredError": "Address is required",
+  "@addressRequiredError": { "description": "Validation error for address field" },
+  "cuisineTypeHint": "e.g., Italian, Chinese, Mexican",
+  "@cuisineTypeHint": { "description": "Hint for cuisine type field" },
+  "offersDelivery": "Offers Delivery",
+  "@offersDelivery": { "description": "Label for offers delivery switch" },
+
+  "openingHoursSection": "Opening Hours",
+  "@openingHoursSection": { "description": "Section header for opening hours" },
+  "paymentMethodsSection": "Payment Methods",
+  "@paymentMethodsSection": { "description": "Section header for payment methods" },
+  "restaurantPhoto": "Restaurant Photo",
+  "@restaurantPhoto": { "description": "Section header for restaurant photo" },
+  "restaurantInformation": "Restaurant Information",
+  "@restaurantInformation": { "description": "Section header for restaurant information" },
+  "menuCategoriesAndItems": "Menu Categories & Items",
+  "@menuCategoriesAndItems": { "description": "Section header for menu categories and items" },
+
+  "autoSuggest": "Auto-suggest",
+  "@autoSuggest": { "description": "Label for auto-suggest image button" },
+  "browseUnsplash": "Browse Unsplash",
+  "@browseUnsplash": { "description": "Label for browse Unsplash button" },
+  "saveRestaurantInfoButton": "Save Restaurant Info",
+  "@saveRestaurantInfoButton": { "description": "Label for save restaurant info button" },
+  "createRestaurantTitle": "Create Restaurant",
+  "@createRestaurantTitle": { "description": "Title and button label for create restaurant page" },
+  "addCategoryButton": "Add Category",
+  "@addCategoryButton": { "description": "Label for add category button" },
+  "addItemButton": "Add Item",
+  "@addItemButton": { "description": "Label for add item button" },
+  "goBack": "Go Back",
+  "@goBack": { "description": "Label for go back button" },
+
+  "addCategoryDialogTitle": "Add Category",
+  "@addCategoryDialogTitle": { "description": "Title for add category dialog" },
+  "categoryNameLabel": "Category Name",
+  "@categoryNameLabel": { "description": "Label for category name field" },
+  "categoryNameHint": "e.g., Appetizers, Main Dishes",
+  "@categoryNameHint": { "description": "Hint for category name field" },
+  "addItemToCategoryTitle": "Add Item to {category}",
+  "@addItemToCategoryTitle": { "placeholders": { "category": { "type": "String" } } },
+  "itemNumberLabel": "Item Number",
+  "@itemNumberLabel": { "description": "Label for item number field" },
+  "itemNumberHelperText": "e.g., 1, 2a, 3b",
+  "@itemNumberHelperText": { "description": "Helper text for item number field" },
+  "itemNameLabel": "Item Name",
+  "@itemNameLabel": { "description": "Label for item name field" },
+  "priceLabel": "Price",
+  "@priceLabel": { "description": "Label for price field" },
+  "descriptionLabel": "Description",
+  "@descriptionLabel": { "description": "Label for description field" },
+  "editCategoryDialogTitle": "Edit Category",
+  "@editCategoryDialogTitle": { "description": "Title for edit category dialog" },
+  "editItemDialogTitle": "Edit: {name}",
+  "@editItemDialogTitle": { "placeholders": { "name": { "type": "String" } } },
+  "deleteCategoryDialogTitle": "Delete Category",
+  "@deleteCategoryDialogTitle": { "description": "Title for delete category dialog" },
+  "deleteCategoryConfirm": "Are you sure you want to delete \"{name}\" and all its items?",
+  "@deleteCategoryConfirm": { "placeholders": { "name": { "type": "String" } } },
+  "deleteItemDialogTitle": "Delete Item",
+  "@deleteItemDialogTitle": { "description": "Title for delete item dialog" },
+  "deleteItemConfirm": "Are you sure you want to delete \"{name}\"?",
+  "@deleteItemConfirm": { "placeholders": { "name": { "type": "String" } } },
+  "editCategoryNameDialogTitle": "Edit Category Name",
+  "@editCategoryNameDialogTitle": { "description": "Title for edit category name dialog" },
+  "editMenuItemDialogTitle": "Edit Menu Item",
+  "@editMenuItemDialogTitle": { "description": "Title for edit menu item dialog" },
+
+  "restaurantInfoTab": "Restaurant Info",
+  "@restaurantInfoTab": { "description": "Label for restaurant info tab" },
+  "menuTab": "Menu",
+  "@menuTab": { "description": "Label for menu tab" },
+  "editRestaurantPageTitle": "Edit: {name}",
+  "@editRestaurantPageTitle": { "placeholders": { "name": { "type": "String" } } },
+
+  "categoryAdded": "Category added!",
+  "@categoryAdded": { "description": "Confirmation when category is added" },
+  "categoryUpdated": "Category updated!",
+  "@categoryUpdated": { "description": "Confirmation when category is updated" },
+  "categoryDeleted": "Category deleted!",
+  "@categoryDeleted": { "description": "Confirmation when category is deleted" },
+  "itemAdded": "Item added!",
+  "@itemAdded": { "description": "Confirmation when item is added" },
+  "itemUpdated": "Item updated!",
+  "@itemUpdated": { "description": "Confirmation when item is updated" },
+  "itemDeleted": "Item deleted!",
+  "@itemDeleted": { "description": "Confirmation when item is deleted" },
+  "restaurantInfoSavedMessage": "Restaurant information updated!",
+  "@restaurantInfoSavedMessage": { "description": "Confirmation when restaurant info is saved" },
+  "aiMenuDesignSavedMessage": "AI menu design saved! Visitors can now view it.",
+  "@aiMenuDesignSavedMessage": { "description": "Confirmation when AI menu design is saved" },
+
+  "errorLoadingMenuData": "Error loading menu data: {error}",
+  "@errorLoadingMenuData": { "placeholders": { "error": { "type": "String" } } },
+  "errorSavingData": "Error saving: {error}",
+  "@errorSavingData": { "placeholders": { "error": { "type": "String" } } },
+  "errorCreatingRestaurant": "Error creating restaurant: {error}",
+  "@errorCreatingRestaurant": { "placeholders": { "error": { "type": "String" } } },
+  "errorGeneral": "Error: {error}",
+  "@errorGeneral": { "placeholders": { "error": { "type": "String" } } },
+
+  "noCategoriesYetMessage": "No categories yet. Add one to get started!",
+  "@noCategoriesYetMessage": { "description": "Message when no categories exist in edit page" },
+  "noItemsInCategory": "No items in this category",
+  "@noItemsInCategory": { "description": "Message when no items exist in a category" },
+  "noCategoriesCardTitle": "No categories yet",
+  "@noCategoriesCardTitle": { "description": "Title on empty categories card" },
+  "noCategoriesCardHint": "Add at least one category with items to create your menu",
+  "@noCategoriesCardHint": { "description": "Hint on empty categories card" },
+
+  "accessDeniedTitle": "Access Denied",
+  "@accessDeniedTitle": { "description": "Title of access denied screen" },
+  "accessDeniedMessage": "You do not have permission to edit this restaurant.",
+  "@accessDeniedMessage": { "description": "Message on access denied screen" },
+  "authRequiredTitle": "Authentication Required",
+  "@authRequiredTitle": { "description": "Title of authentication required screen" },
+  "pleaseSignInToCreate": "Please sign in to create a restaurant",
+  "@pleaseSignInToCreate": { "description": "Message asking user to sign in to create a restaurant" },
+
+  "pleaseAddCategory": "Please add at least one category",
+  "@pleaseAddCategory": { "description": "Validation error when no category is added" },
+  "pleaseAddItem": "Please add at least one item to a category",
+  "@pleaseAddItem": { "description": "Validation error when no item is added" },
+
+  "creatingRestaurant": "Creating Restaurant...",
+  "@creatingRestaurant": { "description": "Loading label while creating restaurant" },
+  "restaurantCreatedMessage": "Restaurant \"{name}\" created successfully!",
+  "@restaurantCreatedMessage": { "placeholders": { "name": { "type": "String" } } },
+  "createRestaurantInfoText": "Create your restaurant menu from scratch. Add categories and items to build your complete menu.",
+  "@createRestaurantInfoText": { "description": "Info card text on create restaurant page" },
+
+  "noPhotoHint": "No photo — tap \"Auto-suggest\" or \"Browse Unsplash\"",
+  "@noPhotoHint": { "description": "Hint when no restaurant photo is selected (edit page)" },
+  "noPhotoYetHint": "No photo yet — tap \"Auto-suggest\" or \"Browse Unsplash\"",
+  "@noPhotoYetHint": { "description": "Hint when no restaurant photo is selected (create page)" },
+
+  "aiMenuDesignTitle": "AI-Designed Menu",
+  "@aiMenuDesignTitle": { "description": "Title for AI menu design section" },
+  "aiMenuDesignSavedDescription": "A design is saved. Generate a new one to replace it.",
+  "@aiMenuDesignSavedDescription": { "description": "Description when AI menu design is already saved" },
+  "aiMenuDesignDescription": "Let Claude create a beautifully styled HTML menu. Preview it, then save — visitors will see a \"View Designed Menu\" button.",
+  "@aiMenuDesignDescription": { "description": "Description of AI menu design feature" },
+  "generatingLabel": "Generating\u2026",
+  "@generatingLabel": { "description": "Loading label while AI menu is generating" },
+  "regenerateDesign": "Regenerate Design",
+  "@regenerateDesign": { "description": "Label for regenerate design button" },
+  "generateDesign": "Generate Design",
+  "@generateDesign": { "description": "Label for generate design button" },
+  "viewSaved": "View Saved",
+  "@viewSaved": { "description": "Label for view saved design button" },
+  "saveAiMenuDialogTitle": "Save AI Menu Design?",
+  "@saveAiMenuDialogTitle": { "description": "Title for save AI menu dialog" },
+  "saveAiMenuDialogContent": "The menu has opened in a new tab for preview.\n\nSave this design so all visitors see it as the \"Designed Menu\" button?",
+  "@saveAiMenuDialogContent": { "description": "Content of save AI menu dialog" },
+  "noMenuCategoriesLoaded": "No menu categories loaded yet.",
+  "@noMenuCategoriesLoaded": { "description": "Message when no menu categories are loaded for AI generation" },
+  "priceVaries": "Price varies",
+  "@priceVaries": { "description": "Label when item price varies" },
+  "uploadMenuFileTitle": "Upload Menu File",
+  "@uploadMenuFileTitle": { "description": "Title for upload menu file page" },
+  "menuLastUpdated": "Menu updated: {date}",
+  "@menuLastUpdated": {
+    "description": "Shows when the menu was last updated",
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "dealsTab": "Deals",
+  "@dealsTab": { "description": "Deals tab label" },
+  "addDeal": "Add Deal",
+  "@addDeal": { "description": "Button to add a new deal" },
+  "editDeal": "Edit Deal",
+  "@editDeal": { "description": "Dialog title when editing a deal" },
+  "noDealYet": "No deals yet",
+  "@noDealYet": { "description": "Placeholder when no deals exist" },
+  "dealTitleLabel": "Deal title",
+  "@dealTitleLabel": { "description": "Label for deal title field" },
+  "dealDescriptionLabel": "Description (optional)",
+  "@dealDescriptionLabel": { "description": "Label for deal description field" },
+  "dealDiscountType": "Discount type",
+  "@dealDiscountType": { "description": "Label for discount type section" },
+  "discountPercentage": "Percentage (%)",
+  "@discountPercentage": { "description": "Percentage discount option" },
+  "discountFixedAmount": "Fixed amount (\u20ac)",
+  "@discountFixedAmount": { "description": "Fixed amount discount option" },
+  "dealDiscountValue": "Value",
+  "@dealDiscountValue": { "description": "Label for discount value field" },
+  "dealAppliesTo": "Applies to",
+  "@dealAppliesTo": { "description": "Label for applies-to section" },
+  "dealAll": "All items",
+  "@dealAll": { "description": "Deal applies to all items" },
+  "dealSelectCategories": "Specific categories",
+  "@dealSelectCategories": { "description": "Deal applies to specific categories" },
+  "dealSelectItems": "Specific items",
+  "@dealSelectItems": { "description": "Deal applies to specific items" },
+  "dealActiveDays": "Active on days (none = every day)",
+  "@dealActiveDays": { "description": "Label for day-of-week selection" },
+  "dealEveryDay": "Every day",
+  "@dealEveryDay": { "description": "Deal is active every day" },
+  "dealActive": "Active",
+  "@dealActive": { "description": "Active toggle label for deal" },
+  "dealSaved": "Deal saved",
+  "@dealSaved": { "description": "Snackbar confirmation after saving deal" },
+  "dealDeleted": "Deal deleted",
+  "@dealDeleted": { "description": "Snackbar confirmation after deleting deal" },
+  "deleteDealConfirm": "Delete this deal?",
+  "@deleteDealConfirm": { "description": "Confirmation dialog title for deal deletion" }
+}

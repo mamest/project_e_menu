@@ -90,4 +90,11 @@ class CartManager {
         .where((cart) => cart.items.isNotEmpty)
         .length;
   }
+
+  /// Returns a map of restaurantId → Cart for all carts that have items.
+  Map<int, Cart> getActiveCarts() {
+    return Map.fromEntries(
+      _restaurantCarts.entries.where((e) => e.value.items.isNotEmpty),
+    );
+  }
 }

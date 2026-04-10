@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
@@ -41,13 +42,14 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Sign-in failed: ${e.toString()}';
+        _errorMessage = AppLocalizations.of(context)!.signInFailed(e.toString());
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF7C3AED),
@@ -59,10 +61,10 @@ class _LoginPageState extends State<LoginPage> {
               child: Row(
                 children: [
                   const BackButton(color: Colors.white),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Sign In',
-                      style: TextStyle(
+                      l10n.signIn,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.w500,
@@ -93,7 +95,7 @@ class _LoginPageState extends State<LoginPage> {
 
               // Title
               Text(
-                'Welcome to Digital Menu',
+                l10n.welcomeTitle,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFF5B21B6),
@@ -104,7 +106,7 @@ class _LoginPageState extends State<LoginPage> {
 
               // Subtitle
               Text(
-                'Sign in to upload menus and manage your restaurants',
+                l10n.signInSubtitle,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.grey[600],
                     ),
@@ -130,9 +132,9 @@ class _LoginPageState extends State<LoginPage> {
                       color: const Color(0xFF7C3AED),
                     ),
                   ),
-                  label: const Text(
-                    'Sign in with Google',
-                    style: TextStyle(
+                  label: Text(
+                    l10n.signInWithGoogle,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -174,9 +176,9 @@ class _LoginPageState extends State<LoginPage> {
                 onPressed: () {
                   Navigator.of(context).pop(false);
                 },
-                child: const Text(
-                  'Continue without signing in',
-                  style: TextStyle(
+                child: Text(
+                  l10n.continueWithoutSignIn,
+                  style: const TextStyle(
                     color: Colors.grey,
                     decoration: TextDecoration.underline,
                   ),
@@ -187,9 +189,7 @@ class _LoginPageState extends State<LoginPage> {
 
               // Info text
               Text(
-                kIsWeb
-                    ? 'Note: You will be redirected to Google\'s sign-in page. You can browse restaurants without signing in. Sign in to access upload and management features.'
-                    : 'Note: You can browse restaurants without signing in. Sign in to access upload and management features.',
+                kIsWeb ? l10n.signInNoteWeb : l10n.signInNoteMobile,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Colors.grey[500],
                       fontStyle: FontStyle.italic,

@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/ai_menu_parser.dart';
 import '../services/geocoding_service.dart';
+import '../services/translation_service.dart';
 import '../services/unsplash_service.dart';
 import '../services/auth_service.dart';
 import '../models/restaurant.dart';
@@ -418,15 +419,22 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
 
       final restaurantId = restaurantResponse['id'] as int;
 
+      // Pre-translate all categories and items in one AI call
+      final translationService = TranslationService();
+      final translationMaps = await _fetchTranslations(translationService);
+
       // Insert categories and items (using edited values where available)
       for (int catIndex = 0; catIndex < _extractedData!.categories.length; catIndex++) {
         final category = _extractedData!.categories[catIndex];
+        final catName = _getCategoryName(catIndex);
+        final catTranslations = translationMaps['cat_$catIndex'] ?? {};
         final categoryResponse = await supabase
             .from('categories')
             .insert({
               'restaurant_id': restaurantId,
-              'name': _getCategoryName(catIndex),
+              'name': catName,
               'display_order': category.displayOrder,
+              if (catTranslations.isNotEmpty) 'translations': catTranslations,
             })
             .select('id')
             .single();
@@ -436,6 +444,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
         // Insert items
         for (int itemIndex = 0; itemIndex < category.items.length; itemIndex++) {
           final item = category.items[itemIndex];
+          final itemTranslations = translationMaps['item_${catIndex}_$itemIndex'] ?? {};
           final itemResponse = await supabase
               .from('items')
               .insert({
@@ -446,6 +455,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
                 'description': _getItemDescription(catIndex, itemIndex),
                 'available': true,
                 'has_variants': item.hasVariants,
+                if (itemTranslations.isNotEmpty) 'translations': itemTranslations,
               })
               .select('id')
               .single();
@@ -510,14 +520,20 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
           .eq('restaurant_id', restaurantId);
 
       // Insert new categories and items from the PDF (using edited values where available)
+      final translationService = TranslationService();
+      final translationMaps = await _fetchTranslations(translationService);
+
       for (int catIndex = 0; catIndex < _extractedData!.categories.length; catIndex++) {
         final category = _extractedData!.categories[catIndex];
+        final catName = _getCategoryName(catIndex);
+        final catTranslations = translationMaps['cat_$catIndex'] ?? {};
         final categoryResponse = await supabase
             .from('categories')
             .insert({
               'restaurant_id': restaurantId,
-              'name': _getCategoryName(catIndex),
+              'name': catName,
               'display_order': category.displayOrder,
+              if (catTranslations.isNotEmpty) 'translations': catTranslations,
             })
             .select('id')
             .single();
@@ -527,6 +543,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
         // Insert items
         for (int itemIndex = 0; itemIndex < category.items.length; itemIndex++) {
           final item = category.items[itemIndex];
+          final itemTranslations = translationMaps['item_${catIndex}_$itemIndex'] ?? {};
           final itemResponse = await supabase
               .from('items')
               .insert({
@@ -537,6 +554,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
                 'description': _getItemDescription(catIndex, itemIndex),
                 'available': true,
                 'has_variants': item.hasVariants,
+                if (itemTranslations.isNotEmpty) 'translations': itemTranslations,
               })
               .select('id')
               .single();
@@ -579,6 +597,40 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
         _errorMessage = 'Error updating menu: $e';
         _isUploading = false;
       });
+    }
+  }
+
+  // Build a flat map of all translations for the extracted data in one AI call.
+  // Keys: 'cat_N' for category N, 'item_N_M' for category N item M.
+  Future<Map<String, Map<String, dynamic>>> _fetchTranslations(
+      TranslationService service) async {
+    if (_extractedData == null) return {};
+    try {
+      final entries = <Map<String, dynamic>>[];
+      for (int ci = 0; ci < _extractedData!.categories.length; ci++) {
+        entries.add({'id': 'cat_$ci', 'name': _getCategoryName(ci)});
+        final cat = _extractedData!.categories[ci];
+        for (int ii = 0; ii < cat.items.length; ii++) {
+          final e = <String, dynamic>{
+            'id': 'item_${ci}_$ii',
+            'name': _getItemName(ci, ii),
+          };
+          final desc = _getItemDescription(ci, ii);
+          if (desc != null && desc.isNotEmpty) e['description'] = desc;
+          entries.add(e);
+        }
+      }
+      final results = await service.translateBatch(entries);
+      // results is a list parallel to entries
+      final map = <String, Map<String, dynamic>>{};
+      for (int i = 0; i < entries.length; i++) {
+        final id = entries[i]['id'] as String;
+        if (results[i].isNotEmpty) map[id] = results[i];
+      }
+      return map;
+    } catch (_) {
+      // Translation failure must not block saving
+      return {};
     }
   }
 

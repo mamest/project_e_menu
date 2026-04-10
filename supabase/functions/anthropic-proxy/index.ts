@@ -130,13 +130,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const pdfBase64 = body.pdfBase64
     const images = body.images
 
-    if (!pdfBase64 && (!images || images.length === 0)) {
-      return new Response(
-        JSON.stringify({ error: 'pdfBase64 or images array is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-    
+    // pdfBase64/images are optional; a prompt-only (text) request is also valid
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY')
     if (!anthropicApiKey) {
       throw new Error('ANTHROPIC_API_KEY not set')

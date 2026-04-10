@@ -7,12 +7,16 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/app_localizations.dart';
+import '../main.dart' show appLocaleNotifier, setAppLocale, kSupportedLocales;
 import '../models/cart.dart';
 import '../models/restaurant.dart';
 import '../services/auth_service.dart';
+import '../utils/payment_utils.dart';
 import 'menu_page.dart';
 import 'admin_upload_page.dart';
 import 'login_page.dart';
@@ -132,7 +136,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
           supabaseUrl.isNotEmpty &&
           supabaseKey.isNotEmpty) {
         var query = Supabase.instance.client.from('restaurants').select(
-            'id, name, address, email, phone, description, image_url, cuisine_type, delivers, opening_hours, payment_methods, latitude, longitude, restaurant_owner_uuid, menu_html_url');
+            'id, name, address, email, phone, description, image_url, cuisine_type, delivers, opening_hours, payment_methods, latitude, longitude, restaurant_owner_uuid, menu_html_url, menu_updated_at, updated_at, translations');
 
         // Apply server-side location filtering with bounding box
         if (latitude != null && longitude != null && radiusKm != null) {
@@ -156,13 +160,13 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
         }
       } else {
         setState(() {
-          errorMessage = 'Supabase not configured. Please check .env file.';
+          errorMessage = AppLocalizations.of(context)!.supabaseNotConfigured;
           loading = false;
         });
       }
     } catch (e) {
       setState(() {
-        errorMessage = 'Error loading restaurants: $e';
+        errorMessage = AppLocalizations.of(context)!.errorLoadingRestaurants(e.toString());
         loading = false;
       });
     }
@@ -176,7 +180,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
       if (userId == null) return [];
       final response = await Supabase.instance.client
           .from('restaurants')
-          .select('id, name, address, email, phone, description, image_url, cuisine_type, delivers, opening_hours, payment_methods, latitude, longitude, restaurant_owner_uuid, menu_html_url')
+          .select('id, name, address, email, phone, description, image_url, cuisine_type, delivers, opening_hours, payment_methods, latitude, longitude, restaurant_owner_uuid, menu_html_url, menu_updated_at, updated_at, translations')
           .eq('restaurant_owner_uuid', userId)
           .order('name');
       if (response is List) {
@@ -263,10 +267,9 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
         });
         if (showSnackbar) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content:
-                  Text('Location services are disabled. Please enable them.'),
-              duration: Duration(seconds: 3),
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.locationServicesDisabled),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -284,9 +287,9 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
           });
           if (showSnackbar) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Location permission denied'),
-                duration: Duration(seconds: 3),
+              SnackBar(
+                content: Text(AppLocalizations.of(context)!.locationPermissionDenied),
+                duration: const Duration(seconds: 3),
               ),
             );
           }
@@ -330,9 +333,9 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
       if (!mounted) return;
       if (showSnackbar) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Using your current location'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.usingCurrentLocation),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -344,7 +347,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
       if (showSnackbar) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error getting location: ${e.toString()}'),
+            content: Text(AppLocalizations.of(context)!.errorGettingLocation(e.toString())),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -353,25 +356,23 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
   }
 
   void _showPermissionDeniedDialog() {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Location Permission Required'),
-        content: const Text(
-          'This app needs location permission to show nearby restaurants. '
-          'Please enable location permission in your device settings.',
-        ),
+        title: Text(l10n.locationPermissionRequired),
+        content: Text(l10n.locationPermissionMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               Geolocator.openLocationSettings();
             },
-            child: const Text('Open Settings'),
+            child: Text(l10n.openSettings),
           ),
         ],
       ),
@@ -416,7 +417,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
     final address = _addressController.text.trim();
     if (address.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter an address')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.pleaseEnterAddress)),
       );
       return;
     }
@@ -438,7 +439,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Location filter applied')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.locationFilterApplied)),
       );
       return;
     }
@@ -475,15 +476,15 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
 
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Location filter applied')),
+            SnackBar(content: Text(AppLocalizations.of(context)!.locationFilterApplied)),
           );
           return;
         } else {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
                 content: Text(
-                    'Address not found. Try entering coordinates instead.')),
+                    AppLocalizations.of(context)!.addressNotFound)),
           );
           return;
         }
@@ -491,7 +492,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Geocoding error: ${e.toString()}')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.geocodingError(e.toString()))),
       );
       return;
     }
@@ -501,25 +502,25 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
   }
 
   void _showGeocodingFailedDialog() {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Geocoding Failed'),
+        title: Text(l10n.geocodingFailed),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: const [
-            Text('Please enter coordinates in format: latitude, longitude'),
-            SizedBox(height: 8),
-            Text('Example: 52.520007, 13.404954'),
-            SizedBox(height: 16),
-            Text(
-                'Or search for your address on Google Maps and copy the coordinates.'),
+          children: [
+            Text(l10n.geocodingInstructions),
+            const SizedBox(height: 8),
+            Text(l10n.geocodingExample),
+            const SizedBox(height: 16),
+            Text(l10n.geocodingMapsHint),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: Text(l10n.ok),
           ),
         ],
       ),
@@ -545,15 +546,16 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
 
   void _showOpeningHours(BuildContext context, Restaurant restaurant) {
     if (restaurant.openingHours == null) return;
+    final l10n = AppLocalizations.of(context)!;
 
     final days = [
-      {'label': 'Monday', 'key': 'monday'},
-      {'label': 'Tuesday', 'key': 'tuesday'},
-      {'label': 'Wednesday', 'key': 'wednesday'},
-      {'label': 'Thursday', 'key': 'thursday'},
-      {'label': 'Friday', 'key': 'friday'},
-      {'label': 'Saturday', 'key': 'saturday'},
-      {'label': 'Sunday', 'key': 'sunday'},
+      {'label': l10n.dayMonday, 'key': 'monday'},
+      {'label': l10n.dayTuesday, 'key': 'tuesday'},
+      {'label': l10n.dayWednesday, 'key': 'wednesday'},
+      {'label': l10n.dayThursday, 'key': 'thursday'},
+      {'label': l10n.dayFriday, 'key': 'friday'},
+      {'label': l10n.daySaturday, 'key': 'saturday'},
+      {'label': l10n.daySunday, 'key': 'sunday'},
     ];
 
     final todayIndex = DateTime.now().weekday - 1;
@@ -561,7 +563,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('${restaurant.name} - Opening Hours'),
+        title: Text(l10n.openingHoursDialog(restaurant.name)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: days.asMap().entries.map((entry) {
@@ -587,12 +589,12 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                     ),
                   ),
                   Text(
-                    hours?.toString() ?? 'Closed',
+                    hours?.toString() ?? l10n.closed,
                     style: TextStyle(
                       fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
                       color: isToday
                           ? const Color(0xFF7C3AED)
-                          : (hours == 'Closed' ? Colors.red : Colors.black87),
+                          : (hours == null ? Colors.red : Colors.black87),
                     ),
                   ),
                 ],
@@ -603,7 +605,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(AppLocalizations.of(context)!.close),
           ),
         ],
       ),
@@ -611,17 +613,16 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
   }
 
   void _showSubscriptionRequiredDialog() {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Restaurant Owner Plan Required'),
-        content: const Text(
-          'Creating and managing menus requires an active Restaurant Owner subscription (€4.99/month).\n\nTap "View Plans" to upgrade your account.',
-        ),
+        title: Text(l10n.subscriptionRequiredTitle),
+        content: Text(l10n.subscriptionRequiredMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -635,7 +636,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
               backgroundColor: const Color(0xFF7C3AED),
               foregroundColor: Colors.white,
             ),
-            child: const Text('View Plans'),
+            child: Text(l10n.viewPlans),
           ),
         ],
       ),
@@ -671,7 +672,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 child: Text(
-                  'Select Restaurant to Edit',
+                  AppLocalizations.of(context)!.selectRestaurantToEdit,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -719,6 +720,27 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
     );
   }
 
+  // ============ CART COMPARISON ============
+
+  void _showCompareSheet() {
+    final activeCarts = CartManager().getActiveCarts();
+    // Match active cart restaurant IDs against the loaded restaurants list
+    final compareRestaurants = restaurants
+        .where((r) => activeCarts.containsKey(r.id))
+        .toList();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _CompareSheet(
+        compareRestaurants: compareRestaurants,
+        activeCarts: activeCarts,
+        onCartChanged: () => setState(() {}),
+      ),
+    );
+  }
+
   // ============ MAIN BUILD ============
 
   @override
@@ -747,6 +769,60 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
     );
   }
 
+  // ============ LANGUAGE PICKER ============
+
+  /// Shows the 2-letter code for the currently active locale.
+  String _languageLabel(BuildContext context) {
+    final code = (appLocaleNotifier.value?.languageCode ??
+            Localizations.localeOf(context).languageCode)
+        .toUpperCase();
+    return code;
+  }
+
+  void _showLanguagePicker() {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return ValueListenableBuilder<Locale?>(
+          valueListenable: appLocaleNotifier,
+          builder: (_, currentLocale, __) {
+            return SimpleDialog(
+              title: Text(l10n.selectLanguage),
+              children: [
+                _LanguageOption(
+                  label: '🇩🇪  Deutsch',
+                  isSelected: currentLocale?.languageCode == 'de',
+                  onTap: () async {
+                    await setAppLocale(const Locale('de'));
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                ),
+                _LanguageOption(
+                  label: '🇬🇧  English',
+                  isSelected: currentLocale?.languageCode == 'en',
+                  onTap: () async {
+                    await setAppLocale(const Locale('en'));
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                ),
+                const Divider(),
+                _LanguageOption(
+                  label: '⚙️  ${l10n.languageSystemDefault}',
+                  isSelected: currentLocale == null,
+                  onTap: () async {
+                    await setAppLocale(null);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       flexibleSpace: Container(
@@ -764,11 +840,11 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Padding(
-                      padding: EdgeInsets.only(left: 16.0),
+                      padding: const EdgeInsets.only(left: 16.0),
                       child: Text(
-                        'Select Restaurant',
+                        AppLocalizations.of(context)!.selectRestaurant,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 20,
@@ -780,6 +856,24 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      if (CartManager().getTotalCartsCount() >= 2)
+                        IconButton(
+                          icon: const Icon(Icons.compare_arrows),
+                          tooltip: AppLocalizations.of(context)!.compareRestaurants,
+                          onPressed: () => _showCompareSheet(),
+                        ),
+                      IconButton(
+                        icon: Text(
+                          _languageLabel(context),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        tooltip: AppLocalizations.of(context)!.selectLanguage,
+                        onPressed: _showLanguagePicker,
+                      ),
                       IconButton(
                         icon: Icon(showFilters ? Icons.filter_list_off : Icons.filter_list),
                         onPressed: () {
@@ -812,7 +906,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                                   setState(() {});
                                   if (mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Signed out successfully')),
+                                      SnackBar(content: Text(AppLocalizations.of(context)!.signedOutSuccessfully)),
                                     );
                                   }
                                 } else if (value == 'my_plan') {
@@ -904,10 +998,10 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                                           ),
                                           child: Text(
                                             isActive
-                                                ? 'Restaurant Owner'
+                                                ? AppLocalizations.of(context)!.restaurantOwnerLabel
                                                 : isOwner
-                                                    ? 'Owner (inactive)'
-                                                    : 'Free Customer',
+                                                    ? AppLocalizations.of(context)!.ownerInactiveLabel
+                                                    : AppLocalizations.of(context)!.freeCustomerLabel,
                                             style: TextStyle(
                                               fontSize: 11,
                                               fontWeight: FontWeight.w600,
@@ -926,23 +1020,23 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
 
                                   // ── Owner-only actions (only when subscription active) ──
                                   if (isActive) ...[
-                                    const PopupMenuItem<String>(
+                                    PopupMenuItem<String>(
                                       value: 'create_manual',
                                       child: Row(
                                         children: [
-                                          Icon(Icons.edit, color: Color(0xFF7C3AED)),
-                                          SizedBox(width: 8),
-                                          Text('Create Menu Manually'),
+                                          const Icon(Icons.edit, color: Color(0xFF7C3AED)),
+                                          const SizedBox(width: 8),
+                                          Text(AppLocalizations.of(context)!.createMenuManually),
                                         ],
                                       ),
                                     ),
-                                    const PopupMenuItem<String>(
+                                    PopupMenuItem<String>(
                                       value: 'upload_pdf',
                                       child: Row(
                                         children: [
-                                          Icon(Icons.upload_file, color: Color(0xFF7C3AED)),
-                                          SizedBox(width: 8),
-                                          Text('Create Menu with AI'),
+                                          const Icon(Icons.upload_file, color: Color(0xFF7C3AED)),
+                                          const SizedBox(width: 8),
+                                          Text(AppLocalizations.of(context)!.createMenuWithAI),
                                         ],
                                       ),
                                     ),
@@ -954,8 +1048,8 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                                             const Icon(Icons.store, color: Color(0xFF7C3AED)),
                                             const SizedBox(width: 8),
                                             Text(count == 1
-                                                ? 'Edit Restaurant'
-                                                : 'Edit Restaurants ($count)'),
+                                                ? AppLocalizations.of(context)!.editRestaurant
+                                                : AppLocalizations.of(context)!.editRestaurants(count)),
                                             if (count > 1) ...const [
                                               Spacer(),
                                               Icon(Icons.chevron_right, size: 18, color: Colors.grey),
@@ -975,27 +1069,27 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                                           isActive
                                               ? Icons.verified
                                               : Icons.workspace_premium_outlined,
-                                          color: isActive ? const Color(0xFF7C3AED) : const Color(0xFF7C3AED),
+                                          color: const Color(0xFF7C3AED),
                                         ),
                                         const SizedBox(width: 8),
                                         Text(
                                           isActive
-                                              ? 'Manage Subscription'
+                                              ? AppLocalizations.of(context)!.manageSubscription
                                               : isOwner
-                                                  ? 'Reactivate Subscription'
-                                                  : 'Upgrade to Restaurant Owner',
+                                                  ? AppLocalizations.of(context)!.reactivateSubscription
+                                                  : AppLocalizations.of(context)!.upgradeToOwner,
                                         ),
                                       ],
                                     ),
                                   ),
                                   const PopupMenuDivider(),
-                                  const PopupMenuItem<String>(
+                                  PopupMenuItem<String>(
                                     value: 'logout',
                                     child: Row(
                                       children: [
-                                        Icon(Icons.logout),
-                                        SizedBox(width: 8),
-                                        Text('Sign Out'),
+                                        const Icon(Icons.logout),
+                                        const SizedBox(width: 8),
+                                        Text(AppLocalizations.of(context)!.signOut),
                                       ],
                                     ),
                                   ),
@@ -1004,7 +1098,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                             )
                           : IconButton(
                               icon: const Icon(Icons.login),
-                              tooltip: 'Sign In',
+                              tooltip: AppLocalizations.of(context)!.signIn,
                               onPressed: () async {
                                 final result = await Navigator.push(
                                   context,
@@ -1015,8 +1109,8 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                                 if (result == true && mounted) {
                                   setState(() {});
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Signed in successfully!'),
+                                    SnackBar(
+                                      content: Text(AppLocalizations.of(context)!.signedInSuccessfully),
                                     ),
                                   );
                                 }
@@ -1049,7 +1143,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
     }
 
     if (restaurants.isEmpty) {
-      return const Center(child: Text('No restaurants found'));
+      return Center(child: Text(AppLocalizations.of(context)!.noRestaurantsFound));
     }
 
     return Column(
@@ -1057,7 +1151,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
         if (showFilters) _buildFilterPanel(),
         Expanded(
           child: displayRestaurants.isEmpty
-              ? const Center(child: Text('No restaurants match filters'))
+              ? Center(child: Text(AppLocalizations.of(context)!.noRestaurantsMatchFilters))
               : ListView.builder(
                   itemCount: displayRestaurants.length,
                   itemBuilder: (context, index) =>
@@ -1118,14 +1212,23 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                   children: [
                     _buildRestaurantHeader(
                         restaurant, hasItems, restaurantCart),
-                    if (restaurant.description != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        restaurant.description!,
-                        style: TextStyle(
-                            fontSize: 14, color: Colors.grey.shade700),
-                      ),
-                    ],
+                    Builder(builder: (ctx) {
+                      final desc = restaurant.localizedDescription(
+                          Localizations.localeOf(ctx).languageCode);
+                      if (desc == null) return const SizedBox.shrink();
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 8),
+                          Text(
+                            desc,
+                            style: TextStyle(
+                                fontSize: 14, color: Colors.grey.shade700),
+                          ),
+                        ],
+                      );
+                    }),
                     const SizedBox(height: 8),
                     _buildRestaurantDetails(restaurant),
                   ],
@@ -1241,9 +1344,9 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
           ),
         ],
       ),
-      child: const Text(
-        'Delivery',
-        style: TextStyle(
+      child: Text(
+        AppLocalizations.of(context)!.deliveryBadge,
+        style: const TextStyle(
           fontSize: 11,
           color: Colors.white,
           fontWeight: FontWeight.bold,
@@ -1275,6 +1378,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
             const SizedBox(height: 8),
             _buildPaymentMethods(restaurant),
           ],
+
         ],
       ),
     );
@@ -1330,7 +1434,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
           const Icon(Icons.access_time, size: 14, color: Color(0xFF7C3AED)),
           const SizedBox(width: 4),
           Text(
-            'Today: ${restaurant.getTodayHours()}',
+            AppLocalizations.of(context)!.todayHours(restaurant.getTodayHours()!),
             style: const TextStyle(
               fontSize: 12,
               color: Color(0xFF7C3AED),
@@ -1368,7 +1472,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
               const Icon(Icons.payment, size: 14, color: Colors.white),
               const SizedBox(width: 4),
               Text(
-                method,
+                localizePaymentMethod(method, AppLocalizations.of(context)!),
                 style: const TextStyle(
                   fontSize: 11,
                   color: Colors.white,
@@ -1379,6 +1483,24 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
           ),
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildMenuUpdatedRow(Restaurant restaurant) {
+    // Use menuUpdatedAt (item-level changes) if available, fall back to updatedAt
+    final ts = restaurant.menuUpdatedAt ?? restaurant.updatedAt;
+    if (ts == null) return const SizedBox.shrink();
+    final locale = Localizations.localeOf(context).languageCode;
+    final formatted = DateFormat.yMMMd(locale).format(ts.toLocal());
+    return Row(
+      children: [
+        const Icon(Icons.update, size: 14, color: Color(0xFF7C3AED)),
+        const SizedBox(width: 4),
+        Text(
+          AppLocalizations.of(context)!.menuLastUpdated(formatted),
+          style: const TextStyle(fontSize: 12, color: Color(0xFF7C3AED)),
+        ),
+      ],
     );
   }
 
@@ -1420,11 +1542,12 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
   }
 
   Widget _buildFilterHeader() {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       children: [
-        const Text(
-          'Filters',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Text(
+          l10n.filters,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const Spacer(),
         if (selectedCuisineTypes.isNotEmpty ||
@@ -1443,13 +1566,14 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                 userLongitude = null;
               });
             },
-            child: const Text('Clear All'),
+            child: Text(l10n.clearAll),
           ),
       ],
     );
   }
 
   Widget _buildLocationFilter() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -1460,9 +1584,9 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Filter by Location',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          Text(
+            l10n.filterByLocation,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Row(
@@ -1477,7 +1601,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                       controller: controller,
                       focusNode: focusNode,
                       decoration: InputDecoration(
-                        hintText: 'Enter address or coordinates',
+                        hintText: l10n.enterAddressOrCoordinates,
                         prefixIcon:
                             const Icon(Icons.location_on, color: Color(0xFF7C3AED)),
                         border: OutlineInputBorder(
@@ -1517,13 +1641,12 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                     );
                     if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Location filter applied')),
+                      SnackBar(content: Text(AppLocalizations.of(context)!.locationFilterApplied)),
                     );
                   },
-                  emptyBuilder: (context) => const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text(
-                        'No addresses found. Try entering coordinates like: 52.520007, 13.404954'),
+                  emptyBuilder: (context) => Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(AppLocalizations.of(context)!.noAddressesFound),
                   ),
                 ),
               ),
@@ -1537,7 +1660,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.my_location),
-                tooltip: 'Use current location',
+                tooltip: AppLocalizations.of(context)!.useCurrentLocation,
                 style: IconButton.styleFrom(
                   backgroundColor: const Color(0xFF7C3AED),
                   foregroundColor: Colors.white,
@@ -1549,7 +1672,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Text('Radius: '),
+              Text(l10n.radius),
               Expanded(
                 child: Slider(
                   value: radiusKm,
@@ -1583,7 +1706,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
           ElevatedButton.icon(
             onPressed: _geocodeAddress,
             icon: const Icon(Icons.search),
-            label: const Text('Apply Location Filter'),
+            label: Text(l10n.applyLocationFilter),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF7C3AED),
               foregroundColor: Colors.white,
@@ -1595,8 +1718,8 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
               children: [
                 const Icon(Icons.check_circle, color: Color(0xFF7C3AED), size: 16),
                 const SizedBox(width: 4),
-                const Text('Location filter active',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF7C3AED))),
+                Text(l10n.locationFilterActive,
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF7C3AED))),
                 const Spacer(),
                 TextButton(
                   onPressed: () async {
@@ -1609,7 +1732,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                     // Reload all restaurants without filtering
                     await _loadRestaurants();
                   },
-                  child: const Text('Remove', style: TextStyle(fontSize: 12)),
+                  child: Text(l10n.remove, style: const TextStyle(fontSize: 12)),
                 ),
               ],
             ),
@@ -1621,7 +1744,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
 
   Widget _buildDeliveryFilter() {
     return SwitchListTile(
-      title: const Text('Delivery Only'),
+      title: Text(AppLocalizations.of(context)!.deliveryOnly),
       value: filterDeliveryOnly ?? false,
       onChanged: (value) {
         setState(() {
@@ -1637,9 +1760,9 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Cuisine Type',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        Text(
+          AppLocalizations.of(context)!.cuisineType,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -1672,9 +1795,9 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Payment Methods',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        Text(
+          AppLocalizations.of(context)!.paymentMethodsFilter,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -1700,6 +1823,422 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
           }).toList(),
         ),
       ],
+    );
+  }
+}
+
+// ============================================================
+// Language Option tile for the language picker dialog
+// ============================================================
+
+class _LanguageOption extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _LanguageOption({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SimpleDialogOption(
+      onPressed: onTap,
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: const TextStyle(fontSize: 15))),
+          if (isSelected)
+            const Icon(Icons.check, color: Colors.deepPurple, size: 18),
+        ],
+      ),
+    );
+  }
+}
+
+// ============================================================
+// Cart Comparison Sheet
+// ============================================================
+
+class _CompareSheet extends StatefulWidget {
+  final List<Restaurant> compareRestaurants;
+  final Map<int, Cart> activeCarts;
+  final VoidCallback onCartChanged;
+
+  const _CompareSheet({
+    required this.compareRestaurants,
+    required this.activeCarts,
+    required this.onCartChanged,
+  });
+
+  @override
+  State<_CompareSheet> createState() => _CompareSheetState();
+}
+
+class _CompareSheetState extends State<_CompareSheet> {
+  Map<int, Cart> _carts = {};
+  List<Restaurant> _sorted = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _carts = Map.from(widget.activeCarts);
+    _sort();
+  }
+
+  void _sort() {
+    _sorted = List.from(widget.compareRestaurants);
+    // Ascending by total (cheapest first)
+    _sorted.sort((a, b) {
+      final ta = _carts[a.id]?.total ?? 0;
+      final tb = _carts[b.id]?.total ?? 0;
+      return ta.compareTo(tb);
+    });
+  }
+
+  Future<void> _launchPhone(String phone) async {
+    final uri = Uri(scheme: 'tel', path: phone);
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
+  }
+
+  Future<void> _launchEmail(BuildContext ctx, Restaurant restaurant, Cart cart) async {
+    final l10n = AppLocalizations.of(ctx)!;
+    final subject = Uri.encodeComponent(l10n.emailOrderSubject);
+    final body = Uri.encodeComponent(
+      cart.items.map((item) {
+        final variant = item.variantName != null ? ' (${item.variantName})' : '';
+        final num = item.itemNumber != null ? '${item.itemNumber}. ' : '';
+        return '${item.quantity}x  $num${item.itemName}$variant  –  €${(item.price * item.quantity).toStringAsFixed(2)}';
+      }).join('\n') +
+          '\n\n${l10n.total} €${cart.total.toStringAsFixed(2)}',
+    );
+    final uri = Uri.parse('mailto:${restaurant.email}?subject=$subject&body=$body');
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (ctx, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFFF5F7FA),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 4),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Header
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.deepPurple.shade600, Colors.purple.shade400],
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.compare_arrows, color: Colors.white, size: 22),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(l10n.compareTitle,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold)),
+                          Text(l10n.compareSubtitle,
+                              style: const TextStyle(
+                                  color: Colors.white70, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              // Vertical list sorted by total desc
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _sorted.length,
+                  itemBuilder: (_, index) {
+                    final restaurant = _sorted[index];
+                    final cart = _carts[restaurant.id]!;
+                    final isCheapest = index == 0;
+                    return _buildRestaurantCard(context, restaurant, cart, isCheapest);
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRestaurantCard(
+      BuildContext context, Restaurant restaurant, Cart cart, bool isCheapest) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: isCheapest
+            ? Border.all(color: const Color(0xFF7C3AED), width: 2)
+            : Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: isCheapest
+                ? Colors.deepPurple.withOpacity(0.15)
+                : Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row: name + total
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: isCheapest
+                  ? LinearGradient(
+                      colors: [Colors.deepPurple.shade400, Colors.purple.shade300])
+                  : LinearGradient(
+                      colors: [Colors.grey.shade100, Colors.grey.shade50]),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(14),
+                topRight: Radius.circular(14),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (isCheapest)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.25),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.star, size: 12, color: Colors.white),
+                              SizedBox(width: 4),
+                              Text('Günstigste Auswahl',
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      Text(
+                        restaurant.name,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: isCheapest
+                              ? Colors.white
+                              : Colors.deepPurple.shade700,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        l10n.compareItemsCount(cart.itemCount),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color:
+                              isCheapest ? Colors.white70 : Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Total pill
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isCheapest
+                        ? Colors.white.withOpacity(0.2)
+                        : const Color(0xFFEDE9FE),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '€${cart.total.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: isCheapest
+                          ? Colors.white
+                          : const Color(0xFF6D28D9),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Items
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Column(
+              children: cart.items.map((item) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 3),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 26,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          color: Colors.deepPurple.shade50,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '${item.quantity}×',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.deepPurple.shade700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                if (item.itemNumber != null &&
+                                    item.itemNumber!.isNotEmpty)
+                                  Text(
+                                    '${item.itemNumber}.  ',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.purple.shade400,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                Expanded(
+                                  child: Text(
+                                    item.itemName,
+                                    style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (item.variantName != null)
+                              Text(
+                                item.variantName!,
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade600),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '€${(item.price * item.quantity).toStringAsFixed(2)}',
+                        style: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          // Contact buttons
+          if (restaurant.phone != null || restaurant.email != null) ...[
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+              child: Row(
+                children: [
+                  if (restaurant.phone != null)
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _launchPhone(restaurant.phone!),
+                        icon: const Icon(Icons.phone, size: 16),
+                        label: Text(l10n.callToOrder,
+                            style: const TextStyle(fontSize: 13)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF7C3AED),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                    ),
+                  if (restaurant.phone != null && restaurant.email != null)
+                    const SizedBox(width: 8),
+                  if (restaurant.email != null)
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () =>
+                            _launchEmail(context, restaurant, cart),
+                        icon: const Icon(Icons.email_outlined, size: 16),
+                        label: Text(l10n.emailToOrder,
+                            style: const TextStyle(fontSize: 13)),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF7C3AED),
+                          side: const BorderSide(color: Color(0xFF7C3AED)),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

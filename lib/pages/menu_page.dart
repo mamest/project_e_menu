@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/cart.dart';
+import '../utils/payment_utils.dart';
+import '../models/deal.dart';
 import '../models/menu_item.dart';
 import '../models/restaurant.dart';
 import '../services/html_menu_service.dart';
@@ -18,6 +23,8 @@ class MenuPage extends StatefulWidget {
 
 class _MenuPageState extends State<MenuPage> {
   List<Category> categories = [];
+  List<Deal> _activeDeals = []; // today-filtered (for price discounts)
+  List<Deal> _allDeals = [];   // all active=true (for display banner)
   bool loading = true;
   String? errorMessage;
   late final Cart cart;
@@ -62,7 +69,7 @@ class _MenuPageState extends State<MenuPage> {
       final response = await Supabase.instance.client
           .from('categories')
           .select(
-              'id, name, display_order, image_url, items(id, name, item_number, price, description, available, has_variants, item_variants(id, name, price, display_order))')
+              'id, name, display_order, image_url, translations, items(id, name, item_number, price, description, available, has_variants, translations, item_variants(id, name, price, display_order))')
           .eq('restaurant_id', widget.restaurant.id)
           .order('display_order');
 
@@ -86,6 +93,7 @@ class _MenuPageState extends State<MenuPage> {
             name: c['name'] as String,
             items: items,
             imageUrl: c['image_url'] as String?,
+            translations: (c['translations'] as Map?)?.cast<String, dynamic>() ?? {},
           );
         }).toList();
 
@@ -100,15 +108,29 @@ class _MenuPageState extends State<MenuPage> {
           return _compareItemNumbers(aMinNum, bMinNum);
         });
 
+        // Load today's active deals
+        final dealsData = await Supabase.instance.client
+            .from('deals')
+            .select(
+                'id, restaurant_id, title, description, discount_type, discount_value, applies_to, day_of_week, valid_from, valid_until, active, deal_categories(category_id), deal_items(item_id)')
+            .eq('restaurant_id', widget.restaurant.id)
+            .eq('active', true);
+        final allDeals = (dealsData as List)
+            .map((d) => Deal.fromJson(d as Map<String, dynamic>))
+            .toList();
+        final todayDeals = allDeals.where((d) => d.isActiveToday).toList();
+
         setState(() {
           categories = nonEmptyCats;
+          _allDeals = allDeals;
+          _activeDeals = todayDeals;
           loading = false;
         });
         _loadCategoryImages();
       }
     } catch (e) {
       setState(() {
-        errorMessage = 'Error loading menu: $e';
+        errorMessage = AppLocalizations.of(context)!.errorLoadingMenu(e.toString());
         loading = false;
       });
     }
@@ -140,6 +162,152 @@ class _MenuPageState extends State<MenuPage> {
     if (mounted) setState(() => categories = updated);
   }
 
+  /// Returns the first active deal that applies to [itemId] in [categoryId],
+  /// or null if no deal applies today.
+  Deal? _dealForItem(int itemId, int categoryId) {
+    for (final deal in _activeDeals) {
+      if (deal.appliesToItem(itemId, categoryId)) return deal;
+    }
+    return null;
+  }
+
+  String _dayLabel(int day) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (day) {
+      case 1: return l10n.dayMonday;
+      case 2: return l10n.dayTuesday;
+      case 3: return l10n.dayWednesday;
+      case 4: return l10n.dayThursday;
+      case 5: return l10n.dayFriday;
+      case 6: return l10n.daySaturday;
+      case 7: return l10n.daySunday;
+      default: return '';
+    }
+  }
+
+  Widget _buildDealsSection() {
+    final l10n = AppLocalizations.of(context)!;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const Icon(Icons.local_offer, color: Color(0xFF7C3AED), size: 20),
+            const SizedBox(width: 8),
+            Text(l10n.dealsTab,
+                style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF7C3AED))),
+          ]),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 108,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _allDeals.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (context, i) => _buildDealChip(_allDeals[i]),
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Divider(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDealChip(Deal deal) {
+    final l10n = AppLocalizations.of(context)!;
+    final isToday = deal.isActiveToday;
+    final dayText = (deal.dayOfWeek == null || deal.dayOfWeek!.isEmpty)
+        ? l10n.dealEveryDay
+        : deal.dayOfWeek!.map(_dayLabel).join(', ');
+
+    return Container(
+      width: 180,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isToday ? const Color(0xFF7C3AED) : Colors.white,
+        border: Border.all(
+            color: isToday ? const Color(0xFF7C3AED) : Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 4,
+              offset: const Offset(0, 2))
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Expanded(
+              child: Text(
+                deal.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: isToday ? Colors.white : Colors.black87),
+              ),
+            ),
+            if (isToday)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.25),
+                    borderRadius: BorderRadius.circular(6)),
+                child: Text('Now',
+                    style: const TextStyle(
+                        fontSize: 9,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold)),
+              ),
+          ]),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: isToday
+                  ? Colors.white.withOpacity(0.25)
+                  : Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              deal.discountLabel,
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: isToday ? Colors.white : Colors.orange.shade800),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(children: [
+            Icon(Icons.calendar_today,
+                size: 11,
+                color: isToday ? Colors.white70 : Colors.grey),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                dayText,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontSize: 11,
+                    color: isToday ? Colors.white70 : Colors.grey[600]),
+              ),
+            ),
+          ]),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCategoryTile(Category cat, int idx) {
     final Color color = _kCategoryColors[idx % _kCategoryColors.length];
     final availableItems = cat.items.where((i) => i.available).toList();
@@ -156,7 +324,7 @@ class _MenuPageState extends State<MenuPage> {
           iconColor: Colors.white,
           collapsedIconColor: Colors.white,
           title: _buildCategoryHeader(cat, color, availableItems.length),
-          children: availableItems.map((item) => _buildItemTile(item, color)).toList(),
+          children: availableItems.map((item) => _buildItemTile(item, color, cat.id)).toList(),
         ),
       ),
     );
@@ -208,7 +376,7 @@ class _MenuPageState extends State<MenuPage> {
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.white.withOpacity(0.5), width: 0.5),
                   ),
-                  child: Text('$count items',
+                  child: Text(AppLocalizations.of(context)!.itemCount(count),
                       style: const TextStyle(color: Colors.white, fontSize: 11)),
                 ),
               ],
@@ -219,14 +387,21 @@ class _MenuPageState extends State<MenuPage> {
     );
   }
 
-  Widget _buildItemTile(MenuItem item, Color catColor) {
+  Widget _buildItemTile(MenuItem item, Color catColor, int categoryId) {
     if (item.hasVariants && item.variants.isNotEmpty) {
-      return _buildVariantItem(item, catColor);
+      return _buildVariantItem(item, catColor, categoryId);
     }
-    return _buildSimpleItem(item, catColor);
+    return _buildSimpleItem(item, catColor, categoryId);
   }
 
-  Widget _buildSimpleItem(MenuItem item, Color catColor) {
+  Widget _buildSimpleItem(MenuItem item, Color catColor, int categoryId) {
+    final locale = Localizations.localeOf(context).languageCode;
+    final deal = _dealForItem(item.id, categoryId);
+    final discountedPrice =
+        deal != null && item.price != null
+            ? deal.computeDiscountedPrice(item.price!)
+            : null;
+    final effectivePrice = discountedPrice ?? item.price;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
       title: Row(children: [
@@ -244,24 +419,56 @@ class _MenuPageState extends State<MenuPage> {
           ),
         ],
         Expanded(
-            child: Text(item.name,
+            child: Text(item.localizedName(locale),
                 style: const TextStyle(fontWeight: FontWeight.w500))),
       ]),
-      subtitle: item.description?.isNotEmpty == true ? Text(item.description!) : null,
-      trailing: item.price != null
+      subtitle: item.localizedDescription(locale)?.isNotEmpty == true
+          ? Text(item.localizedDescription(locale)!)
+          : null,
+      trailing: effectivePrice != null
           ? Row(mainAxisSize: MainAxisSize.min, children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF7C3AED),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text('\u20ac${item.price!.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white)),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (discountedPrice != null)
+                    Text(
+                      '\u20ac${item.price!.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                          fontSize: 11,
+                          decoration: TextDecoration.lineThrough,
+                          color: Colors.grey),
+                    ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: discountedPrice != null
+                          ? Colors.green[700]
+                          : const Color(0xFF7C3AED),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text('\u20ac${effectivePrice.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white)),
+                  ),
+                  if (discountedPrice != null && deal != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: Colors.orange[700],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(deal.discountLabel,
+                          style: const TextStyle(
+                              fontSize: 10,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                ],
               ),
               const SizedBox(width: 6),
               IconButton(
@@ -274,12 +481,12 @@ class _MenuPageState extends State<MenuPage> {
                       itemNumber: item.itemNumber,
                       variantId: null,
                       variantName: null,
-                      price: item.price!,
+                      price: effectivePrice,
                       quantity: 1,
                     ));
                   });
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text('${item.name} added to cart'),
+                    content: Text(AppLocalizations.of(context)!.addedToCart(item.name)),
                     duration: const Duration(seconds: 1),
                   ));
                 },
@@ -289,7 +496,8 @@ class _MenuPageState extends State<MenuPage> {
     );
   }
 
-  Widget _buildVariantItem(MenuItem item, Color catColor) {
+  Widget _buildVariantItem(MenuItem item, Color catColor, int categoryId) {
+    final locale = Localizations.localeOf(context).languageCode;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -313,36 +521,58 @@ class _MenuPageState extends State<MenuPage> {
                   ),
                 ],
                 Expanded(
-                    child: Text(item.name,
+                    child: Text(item.localizedName(locale),
                         style: const TextStyle(
                             fontWeight: FontWeight.w500, fontSize: 15))),
               ]),
-              if (item.description?.isNotEmpty == true)
+              if (item.localizedDescription(locale)?.isNotEmpty == true)
                 Padding(
                   padding: const EdgeInsets.only(top: 3),
-                  child: Text(item.description!,
+                  child: Text(item.localizedDescription(locale)!,
                       style: TextStyle(color: Colors.grey[600], fontSize: 13)),
                 ),
             ],
           ),
         ),
-        ...item.variants.map((variant) => ListTile(
+        ...item.variants.map((variant) {
+              final variantDeal = _dealForItem(item.id, categoryId);
+              final discounted = variantDeal != null
+                  ? variantDeal.computeDiscountedPrice(variant.price)
+                  : null;
+              final effectivePrice = discounted ?? variant.price;
+              return ListTile(
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 40, vertical: 2),
               title: Text(variant.name, style: const TextStyle(fontSize: 14)),
               trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                Container(
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (discounted != null)
+                      Text(
+                        '\u20ac${variant.price.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                            fontSize: 10,
+                            decoration: TextDecoration.lineThrough,
+                            color: Colors.grey),
+                      ),
+                    Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF7C3AED),
+                    color: discounted != null
+                        ? Colors.green[700]
+                        : const Color(0xFF7C3AED),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text('\u20ac${variant.price.toStringAsFixed(2)}',
+                  child: Text('\u20ac${effectivePrice.toStringAsFixed(2)}',
                       style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                           color: Colors.white)),
+                ),
+                  ],
                 ),
                 const SizedBox(width: 6),
                 IconButton(
@@ -356,19 +586,20 @@ class _MenuPageState extends State<MenuPage> {
                         itemNumber: item.itemNumber,
                         variantId: variant.id,
                         variantName: variant.name,
-                        price: variant.price,
+                        price: effectivePrice,
                         quantity: 1,
                       ));
                     });
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                       content:
-                          Text('${item.name} (${variant.name}) added to cart'),
+                          Text(AppLocalizations.of(context)!.addedToCartWithVariant(item.name, variant.name)),
                       duration: const Duration(seconds: 1),
                     ));
                   },
                 ),
               ]),
-            )),
+            );
+        }),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 24),
           child: Divider(),
@@ -393,11 +624,11 @@ class _MenuPageState extends State<MenuPage> {
                 const SizedBox(height: 16),
               ],
               _buildInfoRow(
-                  Icons.location_on, 'Address', widget.restaurant.address),
+                  Icons.location_on, AppLocalizations.of(context)!.addressLabel, widget.restaurant.address),
               if (widget.restaurant.phone != null)
-                _buildInfoRow(Icons.phone, 'Phone', widget.restaurant.phone!),
+                _buildInfoRow(Icons.phone, AppLocalizations.of(context)!.phoneLabel, widget.restaurant.phone!),
               if (widget.restaurant.email != null)
-                _buildInfoRow(Icons.email, 'Email', widget.restaurant.email!),
+                _buildInfoRow(Icons.email, AppLocalizations.of(context)!.emailLabel, widget.restaurant.email!),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -406,8 +637,8 @@ class _MenuPageState extends State<MenuPage> {
                   const SizedBox(width: 8),
                   Text(
                     widget.restaurant.delivers
-                        ? 'Delivery available'
-                        : 'No delivery',
+                        ? AppLocalizations.of(context)!.deliveryAvailable
+                        : AppLocalizations.of(context)!.noDelivery,
                     style: TextStyle(
                       color: widget.restaurant.delivers
                           ? const Color(0xFF7C3AED)
@@ -419,28 +650,50 @@ class _MenuPageState extends State<MenuPage> {
               ),
               if (widget.restaurant.openingHours != null) ...[
                 const SizedBox(height: 16),
-                const Text('Opening Hours:',
+                Text(AppLocalizations.of(context)!.openingHoursTitle,
                     style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 8),
                 ..._buildOpeningHours(),
               ],
               if (widget.restaurant.paymentMethods != null &&
                   widget.restaurant.paymentMethods!.isNotEmpty) ...[
                 const SizedBox(height: 16),
-                const Text('Payment Methods:',
+                Text(AppLocalizations.of(context)!.paymentMethodsTitle,
                     style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
                   children: widget.restaurant.paymentMethods!.map((method) {
                     return Chip(
-                      label: Text(method),
+                      label: Text(localizePaymentMethod(method, AppLocalizations.of(context)!)),
                       backgroundColor: const Color(0xFFEDE9FE),
                     );
                   }).toList(),
+                ),
+              ],
+              if (widget.restaurant.menuUpdatedAt != null ||
+                  widget.restaurant.updatedAt != null) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    const Icon(Icons.update, size: 20, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    Text(
+                      AppLocalizations.of(context)!.menuLastUpdated(
+                        DateFormat.yMMMd(
+                          Localizations.localeOf(context).languageCode,
+                        ).format(
+                          (widget.restaurant.menuUpdatedAt ??
+                                  widget.restaurant.updatedAt)!
+                              .toLocal(),
+                        ),
+                      ),
+                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                  ],
                 ),
               ],
             ],
@@ -449,7 +702,7 @@ class _MenuPageState extends State<MenuPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(AppLocalizations.of(context)!.close),
           ),
         ],
       ),
@@ -481,15 +734,16 @@ class _MenuPageState extends State<MenuPage> {
 
   List<Widget> _buildOpeningHours() {
     if (widget.restaurant.openingHours == null) return [];
+    final l10n = AppLocalizations.of(context)!;
 
     final days = [
-      {'label': 'Monday', 'key': 'monday'},
-      {'label': 'Tuesday', 'key': 'tuesday'},
-      {'label': 'Wednesday', 'key': 'wednesday'},
-      {'label': 'Thursday', 'key': 'thursday'},
-      {'label': 'Friday', 'key': 'friday'},
-      {'label': 'Saturday', 'key': 'saturday'},
-      {'label': 'Sunday', 'key': 'sunday'},
+      {'label': l10n.dayMonday, 'key': 'monday'},
+      {'label': l10n.dayTuesday, 'key': 'tuesday'},
+      {'label': l10n.dayWednesday, 'key': 'wednesday'},
+      {'label': l10n.dayThursday, 'key': 'thursday'},
+      {'label': l10n.dayFriday, 'key': 'friday'},
+      {'label': l10n.daySaturday, 'key': 'saturday'},
+      {'label': l10n.daySunday, 'key': 'sunday'},
     ];
 
     final todayIndex = DateTime.now().weekday - 1;
@@ -516,12 +770,12 @@ class _MenuPageState extends State<MenuPage> {
               ),
             ),
             Text(
-              hours?.toString() ?? 'Closed',
+              hours?.toString() ?? AppLocalizations.of(context)!.closed,
               style: TextStyle(
                 fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
                 color: isToday
                     ? const Color(0xFF7C3AED)
-                    : (hours == 'Closed' ? Colors.red : Colors.black87),
+                    : (hours == null ? Colors.red : Colors.black87),
               ),
             ),
           ],
@@ -549,9 +803,9 @@ class _MenuPageState extends State<MenuPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Your Cart',
-                          style: TextStyle(
+                        Text(
+                          AppLocalizations.of(context)!.yourCart,
+                          style: const TextStyle(
                               fontSize: 24, fontWeight: FontWeight.bold),
                         ),
                         if (cart.items.isNotEmpty)
@@ -563,22 +817,22 @@ class _MenuPageState extends State<MenuPage> {
                                 });
                               });
                             },
-                            child: const Text('Clear All'),
+                            child: Text(AppLocalizations.of(context)!.clearAll),
                           ),
                       ],
                     ),
                     const Divider(),
                     Expanded(
                       child: cart.items.isEmpty
-                          ? const Center(
+                          ? Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.shopping_cart_outlined,
+                                  const Icon(Icons.shopping_cart_outlined,
                                       size: 64, color: Colors.grey),
-                                  SizedBox(height: 16),
-                                  Text('Your cart is empty',
-                                      style: TextStyle(
+                                  const SizedBox(height: 16),
+                                  Text(AppLocalizations.of(context)!.cartEmpty,
+                                      style: const TextStyle(
                                           fontSize: 16, color: Colors.grey)),
                                 ],
                               ),
@@ -718,9 +972,9 @@ class _MenuPageState extends State<MenuPage> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Total:',
-                              style: TextStyle(
+                            Text(
+                              AppLocalizations.of(context)!.total,
+                              style: const TextStyle(
                                   fontSize: 20, fontWeight: FontWeight.bold),
                             ),
                             Text(
@@ -736,41 +990,108 @@ class _MenuPageState extends State<MenuPage> {
                           ],
                         ),
                       ),
-                      SizedBox(
-                        width: double.infinity,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Colors.deepPurple.shade400, Colors.purple.shade500],
+                      const Divider(),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8, bottom: 4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context)!.orderSectionTitle,
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.purple.withOpacity(0.4),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text(
-                                        'Checkout functionality coming soon!')),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
+                            const SizedBox(height: 2),
+                            Text(
+                              AppLocalizations.of(context)!.orderSectionSubtitle,
+                              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                             ),
-                            child: const Text('Proceed to Checkout',
-                                style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
-                          ),
+                          ],
                         ),
                       ),
+                      const SizedBox(height: 8),
+                      if (widget.restaurant.phone == null && widget.restaurant.email == null)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(
+                            AppLocalizations.of(context)!.noContactAvailable,
+                            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                          ),
+                        ),
+                      if (widget.restaurant.phone != null) ...[
+                        SizedBox(
+                          width: double.infinity,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Colors.deepPurple.shade400, Colors.purple.shade500],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.purple.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                final uri = Uri(scheme: 'tel', path: widget.restaurant.phone);
+                                if (await canLaunchUrl(uri)) {
+                                  await launchUrl(uri);
+                                }
+                              },
+                              icon: const Icon(Icons.phone, color: Colors.white),
+                              label: Text(
+                                '${AppLocalizations.of(context)!.callToOrder}  •  ${widget.restaurant.phone}',
+                                style: const TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                      if (widget.restaurant.email != null) ...[
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final subject = Uri.encodeComponent(
+                                AppLocalizations.of(context)!.emailOrderSubject,
+                              );
+                              final body = Uri.encodeComponent(
+                                cart.items.map((item) {
+                                  final variant = item.variantName != null ? ' (${item.variantName})' : '';
+                                  final num = item.itemNumber != null ? '${item.itemNumber}. ' : '';
+                                  return '${item.quantity}x  $num${item.itemName}$variant  –  €${(item.price * item.quantity).toStringAsFixed(2)}';
+                                }).join('\n') +
+                                '\n\n${AppLocalizations.of(context)!.total} €${cart.total.toStringAsFixed(2)}',
+                              );
+                              final uri = Uri.parse('mailto:${widget.restaurant.email}?subject=$subject&body=$body');
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri);
+                              }
+                            },
+                            icon: const Icon(Icons.email_outlined),
+                            label: Text(
+                              '${AppLocalizations.of(context)!.emailToOrder}  •  ${widget.restaurant.email}',
+                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              side: BorderSide(color: Colors.deepPurple.shade300, width: 1.5),
+                              foregroundColor: Colors.deepPurple,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                     ],
                   ],
                 ),
@@ -828,9 +1149,23 @@ class _MenuPageState extends State<MenuPage> {
                     if (widget.restaurant.menuHtmlUrl != null)
                       IconButton(
                         icon: const Icon(Icons.auto_awesome, color: Colors.white),
-                        tooltip: 'View designed menu',
-                        onPressed: () => HtmlMenuService.openStoredHtml(
-                            widget.restaurant.menuHtmlUrl!),
+                        tooltip: AppLocalizations.of(context)!.viewDesignedMenu,
+                        onPressed: () async {
+                          try {
+                            final locale = Localizations.localeOf(context).languageCode;
+                            await HtmlMenuService.openStoredHtml(
+                                widget.restaurant.menuHtmlUrl!, locale);
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error opening menu: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        },
                       ),
                     IconButton(
                       icon: const Icon(Icons.info_outline, color: Colors.white),
@@ -895,12 +1230,24 @@ class _MenuPageState extends State<MenuPage> {
                       child: Text(errorMessage!, textAlign: TextAlign.center),
                     ))
                   : categories.isEmpty
-                      ? const Center(child: Text('No menu items found'))
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          itemCount: categories.length,
-                          itemBuilder: (context, idx) =>
-                              _buildCategoryTile(categories[idx], idx),
+                      ? Center(child: Text(AppLocalizations.of(context)!.noMenuItemsFound))
+                      : CustomScrollView(
+                          slivers: [
+                            if (_allDeals.isNotEmpty)
+                              SliverToBoxAdapter(
+                                child: _buildDealsSection(),
+                              ),
+                            SliverPadding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              sliver: SliverList(
+                                delegate: SliverChildBuilderDelegate(
+                                  (context, idx) =>
+                                      _buildCategoryTile(categories[idx], idx),
+                                  childCount: categories.length,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
         ),
       ),

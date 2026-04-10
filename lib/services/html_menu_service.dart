@@ -17,11 +17,12 @@ class HtmlMenuService {
   /// the user can print / save as PDF.
   static Future<void> generateAndOpenHtmlMenu(
     Restaurant restaurant,
-    List<Category> categories,
+    String locale,
   ) async {
     final url = Uri.parse('$_supabaseUrl/functions/v1/menu-html');
 
     final payload = {
+      'restaurantId': restaurant.id,
       'restaurant': {
         'name': restaurant.name,
         'address': restaurant.address,
@@ -38,28 +39,6 @@ class HtmlMenuService {
           'payment_methods': restaurant.paymentMethods,
         if (restaurant.imageUrl != null) 'image_url': restaurant.imageUrl,
       },
-      'categories': categories
-          .map((cat) => {
-                'name': cat.name,
-                'items': cat.items
-                    .where((item) => item.available)
-                    .map((item) => {
-                          'name': item.name,
-                          if (item.itemNumber != null)
-                            'item_number': item.itemNumber,
-                          if (item.price != null) 'price': item.price,
-                          if (item.description != null)
-                            'description': item.description,
-                          'has_variants': item.hasVariants,
-                          if (item.variants.isNotEmpty)
-                            'variants': item.variants
-                                .map((v) =>
-                                    {'name': v.name, 'price': v.price})
-                                .toList(),
-                        })
-                    .toList(),
-              })
-          .toList(),
     };
 
     final response = await http.post(
@@ -85,25 +64,33 @@ class HtmlMenuService {
     }
 
     // Open as a UTF-8 blob so the browser renders it properly.
-    _openHtmlAsBlob(htmlContent);
+    _openHtmlAsBlob(htmlContent, locale);
   }
 
   /// Fetches HTML from a Supabase Storage URL and opens it as a local blob
-  /// so the browser renders it correctly (avoids Content-Type / charset issues).
-  static Future<void> openStoredHtml(String storageUrl) async {
+  /// so the browser always renders it correctly regardless of server headers.
+  /// [locale] overrides navigator.language so the app's selected language is used.
+  static Future<void> openStoredHtml(String storageUrl, String locale) async {
     final response = await http.get(Uri.parse(storageUrl));
     if (response.statusCode != 200) {
       throw Exception('Failed to fetch stored menu HTML (${response.statusCode})');
     }
-    // response.body decodes bytes as latin-1 by default; use bodyBytes + utf8 decode instead.
     final htmlContent = utf8.decode(response.bodyBytes);
-    _openHtmlAsBlob(htmlContent);
+    _openHtmlAsBlob(htmlContent, locale);
   }
 
   /// Creates a UTF-8 HTML blob URL and opens it in a new tab.
-  static void _openHtmlAsBlob(String htmlContent) {
-    // Encode as UTF-8 bytes so special characters (€, ü, ñ …) survive.
-    final bytes = utf8.encode(htmlContent);
+  /// Injects [locale] so the menu always displays in the app's chosen language.
+  static void _openHtmlAsBlob(String htmlContent, String locale) {
+    // Only inject locale if one was provided.
+    final lang = locale.length >= 2 ? locale.substring(0, 2).toLowerCase() : null;
+    final injected = lang != null
+        ? htmlContent.replaceFirst(
+            "var lang = (navigator.language || 'en').slice(0, 2).toLowerCase();",
+            "var lang = '$lang';",
+          )
+        : htmlContent;
+    final bytes = utf8.encode(injected);
     final blob = html.Blob([bytes], 'text/html; charset=utf-8');
     final blobUrl = html.Url.createObjectUrlFromBlob(blob);
     html.window.open(blobUrl, '_blank');

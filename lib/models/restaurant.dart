@@ -16,6 +16,9 @@ class Restaurant {
   final double? longitude;
   final String? restaurantOwnerUuid;
   final String? menuHtmlUrl;
+  final Map<String, dynamic> translations;
+  final DateTime? menuUpdatedAt;
+  final DateTime? updatedAt;
 
   Restaurant({
     required this.id,
@@ -33,6 +36,9 @@ class Restaurant {
     this.longitude,
     this.restaurantOwnerUuid,
     this.menuHtmlUrl,
+    this.translations = const {},
+    this.menuUpdatedAt,
+    this.updatedAt,
   });
 
   factory Restaurant.fromJson(Map<String, dynamic> json) {
@@ -58,7 +64,28 @@ class Restaurant {
           : null,
       restaurantOwnerUuid: json['restaurant_owner_uuid'] as String?,
       menuHtmlUrl: json['menu_html_url'] as String?,
+      translations: (json['translations'] as Map?)?.cast<String, dynamic>() ?? {},
+      menuUpdatedAt: json['menu_updated_at'] != null
+          ? (json['menu_updated_at'] is DateTime
+              ? json['menu_updated_at'] as DateTime
+              : DateTime.parse(json['menu_updated_at'] as String))
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? (json['updated_at'] is DateTime
+              ? json['updated_at'] as DateTime
+              : DateTime.parse(json['updated_at'] as String))
+          : null,
     );
+  }
+
+  /// Returns the localized description for [locale] (e.g. 'en', 'de').
+  /// Falls back to the original [description] when no translation is available.
+  String? localizedDescription(String locale) {
+    if (translations.isEmpty) return description;
+    final t = translations[locale] as Map?;
+    final localized = t?['description'] as String?;
+    if (localized != null && localized.isNotEmpty) return localized;
+    return description;
   }
 
   String? getTodayHours() {
