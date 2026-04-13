@@ -78,6 +78,26 @@ class TranslationService {
     );
   }
 
+  /// Fires a background translation job for all categories and items of the
+  /// given [restaurantId]. Returns immediately — the edge function runs
+  /// asynchronously and writes translations back to the database on its own.
+  /// Failures are swallowed so the caller is never interrupted.
+  Future<void> triggerBackgroundTranslation(int restaurantId) async {
+    try {
+      await http.post(
+        Uri.parse('$_supabaseUrl/functions/v1/translate-menu'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_supabaseAnonKey',
+          'apikey': _supabaseAnonKey,
+        },
+        body: jsonEncode({'restaurantId': restaurantId}),
+      );
+    } catch (_) {
+      // Background translation failure must not propagate to the caller
+    }
+  }
+
   /// Batch-translates many items (categories + menu items) in a single API
   /// call. Returns a list parallel to [entries], each element being the ready-
   /// to-store translations map (with `_source`).

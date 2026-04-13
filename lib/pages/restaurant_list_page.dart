@@ -136,7 +136,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
           supabaseUrl.isNotEmpty &&
           supabaseKey.isNotEmpty) {
         var query = Supabase.instance.client.from('restaurants').select(
-            'id, name, address, email, phone, description, image_url, cuisine_type, delivers, opening_hours, payment_methods, latitude, longitude, restaurant_owner_uuid, menu_html_url, menu_updated_at, updated_at, translations');
+            'id, name, address, email, phone, description, image_url, cuisine_type, delivers, opening_hours, payment_methods, latitude, longitude, restaurant_owner_uuid, menu_html_url, menu_updated_at, updated_at, translations, google_place_id, google_data');
 
         // Apply server-side location filtering with bounding box
         if (latitude != null && longitude != null && radiusKm != null) {
@@ -180,7 +180,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
       if (userId == null) return [];
       final response = await Supabase.instance.client
           .from('restaurants')
-          .select('id, name, address, email, phone, description, image_url, cuisine_type, delivers, opening_hours, payment_methods, latitude, longitude, restaurant_owner_uuid, menu_html_url, menu_updated_at, updated_at, translations')
+          .select('id, name, address, email, phone, description, image_url, cuisine_type, delivers, opening_hours, payment_methods, latitude, longitude, restaurant_owner_uuid, menu_html_url, menu_updated_at, updated_at, translations, google_place_id, google_data')
           .eq('restaurant_owner_uuid', userId)
           .order('name');
       if (response is List) {

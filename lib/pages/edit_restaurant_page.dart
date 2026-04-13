@@ -15,6 +15,7 @@ import '../services/auth_service.dart';
 import '../services/translation_service.dart';
 import '../services/html_menu_service.dart';
 import '../services/unsplash_service.dart';
+import '../services/google_places_service.dart';
 import '../utils/payment_utils.dart';
 import '../widgets/unsplash_picker_dialog.dart';
 
@@ -73,6 +74,16 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
   String? _savedMenuHtmlUrl;
   String? _errorMessage;
 
+  // Google Places
+  final GooglePlacesService _googlePlacesService = GooglePlacesService();
+  String? _googlePlaceId;
+  Map<String, dynamic> _googleData = {};
+  final TextEditingController _googleSearchController = TextEditingController();
+  List<GooglePlaceCandidate> _googleSearchResults = [];
+  bool _googleSearchLoading = false;
+  bool _googleFetching = false;
+  String? _googleError;
+
   @override
   void initState() {
     super.initState();
@@ -94,6 +105,8 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
     // Payment methods
     _paymentMethods = List<String>.from(widget.restaurant.paymentMethods ?? []);
     _savedMenuHtmlUrl = widget.restaurant.menuHtmlUrl;
+    _googlePlaceId = widget.restaurant.googlePlaceId;
+    _googleData = Map<String, dynamic>.from(widget.restaurant.googleData);
     _loadMenuData();
   }
 
@@ -106,6 +119,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
     _descriptionController.dispose();
     _cuisineTypeController.dispose();
     for (final c in _hoursControllers.values) c.dispose();
+    _googleSearchController.dispose();
     super.dispose();
   }
 
@@ -1174,6 +1188,8 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
             _buildPaymentMethodsSection(),
             const SizedBox(height: 16),
             _buildEditImageSection(),
+            const SizedBox(height: 16),
+            _buildGooglePlacesSection(),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: _isSaving ? null : _saveRestaurantInfo,
@@ -1260,6 +1276,266 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
               ],
             ),
             const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Google Places helpers ─────────────────────────────────────────────────
+
+  Future<void> _googleSearch() async {
+    final query = _googleSearchController.text.trim();
+    if (query.isEmpty) return;
+    setState(() {
+      _googleSearchLoading = true;
+      _googleError = null;
+      _googleSearchResults = [];
+    });
+    try {
+      final results = await _googlePlacesService.searchPlace(query);
+      setState(() => _googleSearchResults = results);
+    } catch (e) {
+      setState(() => _googleError = e.toString());
+    } finally {
+      setState(() => _googleSearchLoading = false);
+    }
+  }
+
+  Future<void> _googleConnect(String placeId) async {
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session == null) return;
+    setState(() {
+      _googleFetching = true;
+      _googleError = null;
+      _googleSearchResults = [];
+    });
+    try {
+      final data = await _googlePlacesService.fetchAndCache(
+        placeId: placeId,
+        restaurantId: widget.restaurant.id,
+        userJwt: session.accessToken,
+      );
+      setState(() {
+        _googlePlaceId = placeId;
+        _googleData = data;
+        _googleSearchController.clear();
+      });
+    } catch (e) {
+      setState(() => _googleError = e.toString());
+    } finally {
+      setState(() => _googleFetching = false);
+    }
+  }
+
+  Future<void> _googleRefresh() async {
+    if (_googlePlaceId == null) return;
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session == null) return;
+    setState(() {
+      _googleFetching = true;
+      _googleError = null;
+    });
+    try {
+      final data = await _googlePlacesService.fetchAndCache(
+        placeId: _googlePlaceId!,
+        restaurantId: widget.restaurant.id,
+        userJwt: session.accessToken,
+      );
+      setState(() => _googleData = data);
+    } catch (e) {
+      setState(() => _googleError = e.toString());
+    } finally {
+      setState(() => _googleFetching = false);
+    }
+  }
+
+  Future<void> _googleDisconnect() async {
+    setState(() => _googleFetching = true);
+    try {
+      await _supabase
+          .from('restaurants')
+          .update({'google_place_id': null, 'google_data': {}})
+          .eq('id', widget.restaurant.id);
+      setState(() {
+        _googlePlaceId = null;
+        _googleData = {};
+      });
+    } catch (e) {
+      setState(() => _googleError = e.toString());
+    } finally {
+      setState(() => _googleFetching = false);
+    }
+  }
+
+  Widget _buildGooglePlacesSection() {
+    return Card(
+      margin: const EdgeInsets.only(top: 4),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Section header
+            Row(
+              children: [
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: const BoxDecoration(shape: BoxShape.circle),
+                  child: const Text(
+                    'G',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF4285F4),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Google Places',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const Spacer(),
+                if (_googlePlaceId != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.green.shade200),
+                    ),
+                    child: const Text(
+                      'Connected',
+                      style: TextStyle(color: Colors.green, fontSize: 12),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Link your restaurant to Google to show real reviews and photos.',
+              style: TextStyle(color: Colors.black54, fontSize: 13),
+            ),
+
+            if (_googleError != null) ...[
+              const SizedBox(height: 8),
+              Text(_googleError!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+            ],
+
+            const SizedBox(height: 12),
+
+            // ── Connected ─────────────────────────────────────────────────
+            if (_googlePlaceId != null) ...[
+              if (_googleData['rating'] != null)
+                Row(
+                  children: [
+                    const Icon(Icons.star, color: Colors.amber, size: 18),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${_googleData['rating']}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '(${_googleData['user_rating_count']} reviews)',
+                      style: const TextStyle(color: Colors.black54, fontSize: 13),
+                    ),
+                  ],
+                ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  if (_googleFetching)
+                    const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else ...[
+                    OutlinedButton.icon(
+                      onPressed: _googleRefresh,
+                      icon: const Icon(Icons.refresh, size: 16),
+                      label: const Text('Refresh'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton.icon(
+                      onPressed: _googleDisconnect,
+                      icon: const Icon(Icons.link_off, size: 16, color: Colors.red),
+                      label: const Text('Disconnect',
+                          style: TextStyle(color: Colors.red)),
+                    ),
+                  ],
+                ],
+              ),
+            ]
+
+            // ── Not connected ─────────────────────────────────────────────
+            else ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _googleSearchController,
+                      decoration: InputDecoration(
+                        hintText:
+                            '${widget.restaurant.name}, ${widget.restaurant.address}',
+                        border: const OutlineInputBorder(),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        isDense: true,
+                      ),
+                      onSubmitted: (_) => _googleSearch(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  if (_googleSearchLoading)
+                    const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else
+                    IconButton(
+                      onPressed: _googleSearch,
+                      icon: const Icon(Icons.search),
+                      tooltip: 'Search Google',
+                    ),
+                ],
+              ),
+              if (_googleSearchResults.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                ...(_googleSearchResults.map((p) => ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(p.name,
+                          style: const TextStyle(fontWeight: FontWeight.w500)),
+                      subtitle: Text(p.address,
+                          style: const TextStyle(fontSize: 12)),
+                      trailing: p.rating != null
+                          ? Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.star,
+                                    size: 14, color: Colors.amber),
+                                const SizedBox(width: 2),
+                                Text('${p.rating}',
+                                    style: const TextStyle(fontSize: 12)),
+                              ],
+                            )
+                          : null,
+                      onTap: _googleFetching
+                          ? null
+                          : () => _googleConnect(p.placeId),
+                    ))),
+              ],
+            ],
           ],
         ),
       ),

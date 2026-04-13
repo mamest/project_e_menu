@@ -11,6 +11,7 @@ import '../models/menu_item.dart';
 import '../models/restaurant.dart';
 import '../services/html_menu_service.dart';
 import '../services/unsplash_service.dart';
+import '../services/google_places_service.dart';
 
 class MenuPage extends StatefulWidget {
   final Restaurant restaurant;
@@ -29,11 +30,20 @@ class _MenuPageState extends State<MenuPage> {
   String? errorMessage;
   late final Cart cart;
 
+  // Google Places photos — fetched lazily from the edge function
+  final GooglePlacesService _googlePlacesService = GooglePlacesService();
+  List<String> _googlePhotoUris = [];
+  bool _googlePhotosLoaded = false;
+
   @override
   void initState() {
     super.initState();
     cart = CartManager().getCartForRestaurant(widget.restaurant.id);
     _loadMenu();
+    if (widget.restaurant.googlePlaceId != null &&
+        widget.restaurant.googleData['photo_names'] != null) {
+      _loadGooglePhotos();
+    }
   }
 
   // Natural sort comparison for item numbers (handles "1", "2", "10", "1a", "2b" etc.)
@@ -183,6 +193,201 @@ class _MenuPageState extends State<MenuPage> {
       case 7: return l10n.daySunday;
       default: return '';
     }
+  }
+
+  Future<void> _loadGooglePhotos() async {
+    final photoNames = widget.restaurant.googleData['photo_names'];
+    if (photoNames == null) return;
+    final names = List<String>.from(photoNames as List);
+    final uris = await Future.wait(
+      names.map((n) => _googlePlacesService.getPhotoUri(n)),
+    );
+    if (mounted) {
+      setState(() {
+        _googlePhotoUris = uris.whereType<String>().toList();
+        _googlePhotosLoaded = true;
+      });
+    }
+  }
+
+  Widget _buildGoogleSection() {
+    final data = widget.restaurant.googleData;
+    final rating = data['rating'] != null ? (data['rating'] as num).toDouble() : null;
+    final reviewCount = data['user_rating_count'] as int?;
+    final mapsUri = data['google_maps_uri'] as String?;
+    final reviews = (data['reviews'] as List?)
+            ?.map((r) => (r as Map).cast<String, dynamic>())
+            .toList() ??
+        [];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row
+          Row(
+            children: [
+              const Text(
+                'G',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF4285F4),
+                ),
+              ),
+              const SizedBox(width: 6),
+              if (rating != null) ...[
+                _buildStars(rating),
+                const SizedBox(width: 6),
+                Text(
+                  rating.toStringAsFixed(1),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+                if (reviewCount != null) ...[
+                  const SizedBox(width: 4),
+                  Text(
+                    '($reviewCount)',
+                    style: const TextStyle(color: Colors.black54, fontSize: 13),
+                  ),
+                ],
+              ],
+              const Spacer(),
+              if (mapsUri != null)
+                TextButton.icon(
+                  onPressed: () => launchUrl(Uri.parse(mapsUri)),
+                  icon: const Icon(Icons.open_in_new, size: 14),
+                  label: const Text('Google Maps', style: TextStyle(fontSize: 13)),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF4285F4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  ),
+                ),
+            ],
+          ),
+
+          // Photo strip
+          if (_googlePhotosLoaded && _googlePhotoUris.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 110,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _googlePhotoUris.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, i) => ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    _googlePhotoUris[i],
+                    width: 150,
+                    height: 110,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+              ),
+            ),
+          ] else if (!_googlePhotosLoaded &&
+              widget.restaurant.googleData['photo_names'] != null) ...[
+            const SizedBox(height: 8),
+            const SizedBox(
+              height: 110,
+              child: Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+          ],
+
+          // Reviews
+          if (reviews.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ...reviews.take(3).map((r) => _buildReviewCard(r)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStars(double rating) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (i) {
+        if (rating >= i + 1) return const Icon(Icons.star, color: Colors.amber, size: 16);
+        if (rating >= i + 0.5) return const Icon(Icons.star_half, color: Colors.amber, size: 16);
+        return const Icon(Icons.star_border, color: Colors.amber, size: 16);
+      }),
+    );
+  }
+
+  Widget _buildReviewCard(Map<String, dynamic> review) {
+    final rating = (review['rating'] as num?)?.toInt() ?? 0;
+    final text = review['text'] as String? ?? '';
+    final author = review['author_name'] as String? ?? '';
+    final time = review['relative_publish_time_description'] as String? ?? '';
+    final photoUri = review['author_photo_uri'] as String?;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (photoUri != null)
+                  CircleAvatar(
+                    radius: 12,
+                    backgroundImage: NetworkImage(photoUri),
+                    onBackgroundImageError: (_, __) {},
+                  )
+                else
+                  const CircleAvatar(
+                    radius: 12,
+                    child: Icon(Icons.person, size: 14),
+                  ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(author,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w500, fontSize: 13)),
+                      Text(time,
+                          style: const TextStyle(
+                              color: Colors.black54, fontSize: 11)),
+                    ],
+                  ),
+                ),
+                _buildStars(rating.toDouble()),
+              ],
+            ),
+            if (text.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                text,
+                style: const TextStyle(fontSize: 13, color: Colors.black87),
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildDealsSection() {
@@ -1236,6 +1441,11 @@ class _MenuPageState extends State<MenuPage> {
                             if (_allDeals.isNotEmpty)
                               SliverToBoxAdapter(
                                 child: _buildDealsSection(),
+                              ),
+                            if (widget.restaurant.googlePlaceId != null &&
+                                widget.restaurant.googleData.isNotEmpty)
+                              SliverToBoxAdapter(
+                                child: _buildGoogleSection(),
                               ),
                             SliverPadding(
                               padding: const EdgeInsets.symmetric(vertical: 8),

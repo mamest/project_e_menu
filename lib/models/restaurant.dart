@@ -19,6 +19,8 @@ class Restaurant {
   final Map<String, dynamic> translations;
   final DateTime? menuUpdatedAt;
   final DateTime? updatedAt;
+  final String? googlePlaceId;
+  final Map<String, dynamic> googleData;
 
   Restaurant({
     required this.id,
@@ -39,6 +41,8 @@ class Restaurant {
     this.translations = const {},
     this.menuUpdatedAt,
     this.updatedAt,
+    this.googlePlaceId,
+    this.googleData = const {},
   });
 
   factory Restaurant.fromJson(Map<String, dynamic> json) {
@@ -75,6 +79,8 @@ class Restaurant {
               ? json['updated_at'] as DateTime
               : DateTime.parse(json['updated_at'] as String))
           : null,
+      googlePlaceId: json['google_place_id'] as String?,
+      googleData: (json['google_data'] as Map?)?.cast<String, dynamic>() ?? {},
     );
   }
 
