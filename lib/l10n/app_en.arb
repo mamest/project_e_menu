@@ -223,6 +223,50 @@
   "@paymentMethodsFilter": {
     "description": "Label for payment methods filter"
   },
+  "favoritesOnly": "Favorites Only",
+  "@favoritesOnly": {
+    "description": "Label for favorites only filter"
+  },
+  "myFavorites": "My Favorites",
+  "@myFavorites": {
+    "description": "Menu item to jump to favorites"
+  },
+  "noFavoritesYet": "No favorites yet",
+  "@noFavoritesYet": {
+    "description": "Label shown when no favorites are saved"
+  },
+  "addToFavorites": "Add to favorites",
+  "@addToFavorites": {
+    "description": "Tooltip for adding to favorites"
+  },
+  "removeFromFavorites": "Remove from favorites",
+  "@removeFromFavorites": {
+    "description": "Tooltip for removing from favorites"
+  },
+  "signInToFavorite": "Sign in to save favorites",
+  "@signInToFavorite": {
+    "description": "Snackbar shown when guest tries to favorite"
+  },
+  "shareRestaurant": "Share restaurant",
+  "@shareRestaurant": {
+    "description": "Tooltip for the share button on a restaurant card"
+  },
+  "linkCopied": "Link copied to clipboard!",
+  "@linkCopied": {
+    "description": "Snackbar shown after copying the share link"
+  },
+  "generateQrCode": "Generate QR Code",
+  "@generateQrCode": {
+    "description": "Menu item label for generating a QR code"
+  },
+  "qrCodeTitle": "QR Code",
+  "@qrCodeTitle": {
+    "description": "Dialog title for the QR code"
+  },
+  "downloadQrCode": "Download PNG",
+  "@downloadQrCode": {
+    "description": "Button to download the QR code as PNG"
+  },
   "filters": "Filters",
   "@filters": {
     "description": "Label for the filters section"

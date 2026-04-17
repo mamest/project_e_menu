@@ -186,6 +186,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paymentMethodsFilter => 'Payment Methods';
 
   @override
+  String get favoritesOnly => 'Favorites Only';
+
+  @override
+  String get myFavorites => 'My Favorites';
+
+  @override
+  String get noFavoritesYet => 'No favorites yet';
+
+  @override
+  String get addToFavorites => 'Add to favorites';
+
+  @override
+  String get removeFromFavorites => 'Remove from favorites';
+
+  @override
+  String get signInToFavorite => 'Sign in to save favorites';
+
+  @override
+  String get shareRestaurant => 'Share restaurant';
+
+  @override
+  String get linkCopied => 'Link copied to clipboard!';
+
+  @override
+  String get generateQrCode => 'Generate QR Code';
+
+  @override
+  String get qrCodeTitle => 'QR Code';
+
+  @override
+  String get downloadQrCode => 'Download PNG';
+
+  @override
   String get filters => 'Filters';
 
   @override

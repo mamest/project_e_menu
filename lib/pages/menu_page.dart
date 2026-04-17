@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -72,6 +74,33 @@ class _MenuPageState extends State<MenuPage> {
 
     // Fallback to string comparison
     return a.compareTo(b);
+  }
+
+  Future<void> _shareRestaurant() async {
+    final baseUrl = Uri.base.origin;
+    final fullUrl = '$baseUrl/?r=${widget.restaurant.id}';
+
+    String shareUrl = fullUrl;
+    try {
+      final response = await http.get(
+        Uri.parse(
+            'https://is.gd/create.php?format=simple&url=${Uri.encodeComponent(fullUrl)}'),
+      ).timeout(const Duration(seconds: 5));
+      if (response.statusCode == 200 && response.body.startsWith('http')) {
+        shareUrl = response.body.trim();
+      }
+    } catch (_) {
+      // Fall back to full URL
+    }
+
+    await Clipboard.setData(ClipboardData(text: shareUrl));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.linkCopied),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   Future<void> _loadMenu() async {
@@ -1372,6 +1401,11 @@ class _MenuPageState extends State<MenuPage> {
                           }
                         },
                       ),
+                    IconButton(
+                      icon: const Icon(Icons.share_outlined, color: Colors.white),
+                      tooltip: AppLocalizations.of(context)!.shareRestaurant,
+                      onPressed: _shareRestaurant,
+                    ),
                     IconButton(
                       icon: const Icon(Icons.info_outline, color: Colors.white),
                       onPressed: () {

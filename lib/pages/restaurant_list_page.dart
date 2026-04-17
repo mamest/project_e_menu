@@ -1,9 +1,13 @@
 ﻿import 'dart:async';
 import 'dart:convert';
+import 'dart:html' as html;
 import 'dart:math';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -12,7 +16,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
-import '../main.dart' show appLocaleNotifier, setAppLocale, kSupportedLocales;
+import '../main.dart' show appLocaleNotifier, setAppLocale;
 import '../models/cart.dart';
 import '../models/restaurant.dart';
 import '../services/auth_service.dart';
@@ -43,6 +47,10 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
   Set<String> selectedPaymentMethods = {};
   bool? filterDeliveryOnly;
   bool showFilters = false;
+  bool filterFavoritesOnly = false;
+
+  // Favorites
+  Set<int> _favoriteIds = {};
 
   // Location filter states
   final TextEditingController _addressController = TextEditingController();
@@ -67,6 +75,10 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
           event.event == AuthChangeEvent.tokenRefreshed) {
         await _authService.loadProfile();
         if (_authService.isRestaurantOwner) await _loadOwnerRestaurants();
+        await _loadFavorites();
+      }
+      if (event.event == AuthChangeEvent.signedOut) {
+        if (mounted) setState(() => _favoriteIds = {});
       }
       if (mounted) setState(() {});
     });
@@ -77,6 +89,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
     if (_authService.isLoggedIn) {
       await _authService.loadProfile();
       if (_authService.isRestaurantOwner) await _loadOwnerRestaurants();
+      await _loadFavorites();
     }
     // Get GPS location first, then load restaurants
     await _getCurrentLocation(showSnackbar: false);
@@ -89,6 +102,25 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
       );
     } else {
       await _loadRestaurants();
+    }
+    // Handle deep link: ?r={restaurantId}
+    _handleDeepLink();
+  }
+
+  void _handleDeepLink() {
+    final idStr = Uri.base.queryParameters['r'];
+    if (idStr == null) return;
+    final id = int.tryParse(idStr);
+    if (id == null) return;
+    final target = restaurants.cast<Restaurant?>().firstWhere(
+          (r) => r!.id == id,
+          orElse: () => null,
+        );
+    if (target != null && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => MenuPage(restaurant: target)),
+      );
     }
   }
 
@@ -192,17 +224,120 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
     return [];
   }
 
+  // ============ FAVORITES ============
+
+  Future<void> _loadFavorites() async {
+    final userId = _authService.currentUser?.id;
+    if (userId == null) return;
+    try {
+      final response = await Supabase.instance.client
+          .from('user_favorites')
+          .select('restaurant_id')
+          .eq('user_id', userId);
+      if (response is List && mounted) {
+        setState(() {
+          _favoriteIds =
+              response.map<int>((r) => r['restaurant_id'] as int).toSet();
+        });
+      }
+    } catch (e) {
+      debugPrint('_loadFavorites error: $e');
+    }
+  }
+
+  Future<void> _toggleFavorite(int restaurantId) async {
+    final userId = _authService.currentUser?.id;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.signInToFavorite)),
+      );
+      return;
+    }
+    final isFav = _favoriteIds.contains(restaurantId);
+    // Optimistic update
+    setState(() {
+      if (isFav) {
+        _favoriteIds.remove(restaurantId);
+      } else {
+        _favoriteIds.add(restaurantId);
+      }
+    });
+    try {
+      if (isFav) {
+        await Supabase.instance.client
+            .from('user_favorites')
+            .delete()
+            .eq('user_id', userId)
+            .eq('restaurant_id', restaurantId);
+      } else {
+        await Supabase.instance.client.from('user_favorites').upsert({
+          'user_id': userId,
+          'restaurant_id': restaurantId,
+        });
+      }
+    } catch (e) {
+      // Revert on error
+      if (mounted) {
+        setState(() {
+          if (isFav) {
+            _favoriteIds.add(restaurantId);
+          } else {
+            _favoriteIds.remove(restaurantId);
+          }
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    }
+  }
+
+  // ============ SHARE ============
+
+  Future<void> _shareRestaurant(Restaurant restaurant) async {
+    final baseUrl = Uri.base.origin;
+    final fullUrl = '$baseUrl/?r=${restaurant.id}';
+
+    String shareUrl = fullUrl;
+    try {
+      final response = await http.get(
+        Uri.parse(
+            'https://is.gd/create.php?format=simple&url=${Uri.encodeComponent(fullUrl)}'),
+      ).timeout(const Duration(seconds: 5));
+      if (response.statusCode == 200 && response.body.startsWith('http')) {
+        shareUrl = response.body.trim();
+      }
+    } catch (_) {
+      // Fall back to the full URL if shortening fails
+    }
+
+    await Clipboard.setData(ClipboardData(text: shareUrl));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.linkCopied),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   // ============ FILTERING ============
 
   List<Restaurant> _applyFilters() {
     if (selectedCuisineTypes.isEmpty &&
         selectedPaymentMethods.isEmpty &&
         filterDeliveryOnly == null &&
-        !_filterByLocation) {
+        !_filterByLocation &&
+        !filterFavoritesOnly) {
       return restaurants;
     }
 
     return restaurants.where((restaurant) {
+      // Favorites filter
+      if (filterFavoritesOnly && !_favoriteIds.contains(restaurant.id)) {
+        return false;
+      }
+
       // Location filtering is now handled server-side via bounding box
       // We only need to apply precise distance filtering for edge cases
       if (_filterByLocation && userLatitude != null && userLongitude != null) {
@@ -720,6 +855,301 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
     );
   }
 
+  // ============ QR CODE ============
+
+  Future<void> _pickRestaurantForQr() async {
+    final myRestaurants = await _loadOwnerRestaurants();
+    if (!mounted) return;
+    if (myRestaurants.length == 1) {
+      _showQrCodeDialog(myRestaurants.first);
+    } else if (myRestaurants.length > 1) {
+      await showModalBottomSheet(
+        context: context,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        isScrollControlled: true,
+        builder: (ctx) => DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.5,
+          minChildSize: 0.3,
+          maxChildSize: 0.85,
+          builder: (_, sc) => Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 4),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2)),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                child: Row(children: [
+                  const Icon(Icons.qr_code, color: Color(0xFF7C3AED)),
+                  const SizedBox(width: 8),
+                  Text(AppLocalizations.of(context)!.generateQrCode,
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.deepPurple.shade700)),
+                ]),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView.builder(
+                  controller: sc,
+                  itemCount: myRestaurants.length,
+                  itemBuilder: (_, i) {
+                    final r = myRestaurants[i];
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: const Color(0xFFEDE9FE),
+                        backgroundImage:
+                            r.imageUrl != null ? NetworkImage(r.imageUrl!) : null,
+                        child: r.imageUrl == null
+                            ? const Icon(Icons.store, color: Color(0xFF7C3AED))
+                            : null,
+                      ),
+                      title: Text(r.name,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle: Text(r.address,
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                      trailing: const Icon(Icons.qr_code_2,
+                          color: Color(0xFF7C3AED)),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _showQrCodeDialog(r);
+                      },
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  void _showQrCodeDialog(Restaurant restaurant) {
+    final url =
+        '${Uri.base.origin}/?r=${restaurant.id}';
+    final l10n = AppLocalizations.of(context)!;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(children: [
+          const Icon(Icons.qr_code, color: Color(0xFF7C3AED)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '${l10n.qrCodeTitle} – ${restaurant.name}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ]),
+        content: SizedBox(
+          width: 280,
+          child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 260,
+              height: 260,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFDDD6FE), width: 2),
+              ),
+              padding: const EdgeInsets.all(12),
+              child: RepaintBoundary(
+                child: QrImageView(
+                  data: url,
+                  version: QrVersions.auto,
+                  size: 236,
+                  backgroundColor: Colors.white,
+                  eyeStyle: const QrEyeStyle(
+                    eyeShape: QrEyeShape.square,
+                    color: Color(0xFF6D28D9),
+                  ),
+                  dataModuleStyle: const QrDataModuleStyle(
+                    dataModuleShape: QrDataModuleShape.square,
+                    color: Color(0xFF1E1E2E),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              url,
+              style: const TextStyle(fontSize: 11, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.close),
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.download),
+            label: Text(l10n.downloadQrCode),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF7C3AED),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => _downloadQrCode(restaurant, url),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _downloadQrCode(Restaurant restaurant, String url) async {
+    try {
+      final qrPainter = QrPainter(
+        data: url,
+        version: QrVersions.auto,
+        eyeStyle: const QrEyeStyle(
+          eyeShape: QrEyeShape.square,
+          color: Color(0xFF6D28D9),
+        ),
+        dataModuleStyle: const QrDataModuleStyle(
+          dataModuleShape: QrDataModuleShape.square,
+          color: Color(0xFF1E1E2E),
+        ),
+      );
+
+      const size = 1024.0;
+      final imageData = await qrPainter.toImageData(size);
+      if (imageData == null) return;
+
+      final bytes = imageData.buffer.asUint8List();
+      final blob = html.Blob([bytes], 'image/png');
+      final objectUrl = html.Url.createObjectUrlFromBlob(blob);
+      html.AnchorElement(href: objectUrl)
+        ..setAttribute(
+            'download', '${restaurant.name.replaceAll(' ', '_')}_qr.png')
+        ..click();
+      html.Url.revokeObjectUrl(objectUrl);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Download failed: $e')),
+      );
+    }
+  }
+
+  // ============ FAVORITES SHEET ============
+
+  void _showFavoritesSheet() {
+    final favoriteRestaurants = restaurants
+        .where((r) => _favoriteIds.contains(r.id))
+        .toList();
+    final l10n = AppLocalizations.of(context)!;
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      isScrollControlled: true,
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.5,
+          minChildSize: 0.3,
+          maxChildSize: 0.85,
+          builder: (_, scrollController) => Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 4),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                child: Row(
+                  children: [
+                    const Icon(Icons.favorite, color: Colors.red, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      l10n.myFavorites,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.deepPurple.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: favoriteRestaurants.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.favorite_border, size: 48, color: Colors.grey),
+                            const SizedBox(height: 8),
+                            Text(l10n.noFavoritesYet,
+                                style: const TextStyle(color: Colors.grey)),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: scrollController,
+                        itemCount: favoriteRestaurants.length,
+                        itemBuilder: (_, index) {
+                          final r = favoriteRestaurants[index];
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: const Color(0xFFEDE9FE),
+                              backgroundImage:
+                                  r.imageUrl != null ? NetworkImage(r.imageUrl!) : null,
+                              child: r.imageUrl == null
+                                  ? const Icon(Icons.restaurant, color: Color(0xFF7C3AED))
+                                  : null,
+                            ),
+                            title: Text(r.name,
+                                style: const TextStyle(fontWeight: FontWeight.w600)),
+                            subtitle: Text(r.address,
+                                maxLines: 1, overflow: TextOverflow.ellipsis),
+                            trailing: const Icon(Icons.chevron_right,
+                                color: Color(0xFF7C3AED)),
+                            onTap: () async {
+                              Navigator.pop(ctx);
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => MenuPage(restaurant: r),
+                                ),
+                              );
+                              setState(() {});
+                            },
+                          );
+                        },
+                      ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   // ============ CART COMPARISON ============
 
   void _showCompareSheet() {
@@ -954,6 +1384,10 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                                   } else if (myRestaurants.length > 1 && mounted) {
                                     await _showEditRestaurantPicker(myRestaurants);
                                   }
+                                } else if (value == 'qr_code') {
+                                  await _pickRestaurantForQr();
+                                } else if (value == 'my_favorites') {
+                                  _showFavoritesSheet();
                                 }
                               },
                               itemBuilder: (context) {
@@ -1057,8 +1491,49 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                                           ],
                                         ),
                                       ),
+                                    if (count > 0)
+                                      PopupMenuItem<String>(
+                                        value: 'qr_code',
+                                        child: Row(
+                                          children: [
+                                            const Icon(Icons.qr_code, color: Color(0xFF7C3AED)),
+                                            const SizedBox(width: 8),
+                                            Text(AppLocalizations.of(context)!.generateQrCode),
+                                          ],
+                                        ),
+                                      ),
                                     const PopupMenuDivider(),
                                   ],
+
+                                  // ── Plan management ──
+                                  PopupMenuItem<String>(
+                                    value: 'my_favorites',
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          _favoriteIds.isNotEmpty ? Icons.favorite : Icons.favorite_border,
+                                          color: _favoriteIds.isNotEmpty ? Colors.red : Colors.grey,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(AppLocalizations.of(context)!.myFavorites),
+                                        if (_favoriteIds.isNotEmpty) ...[
+                                          const Spacer(),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.red.shade50,
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                            child: Text(
+                                              '${_favoriteIds.length}',
+                                              style: TextStyle(fontSize: 11, color: Colors.red.shade700, fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuDivider(),
 
                                   // ── Plan management ──
                                   PopupMenuItem<String>(
@@ -1142,21 +1617,19 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
       );
     }
 
-    if (restaurants.isEmpty) {
-      return Center(child: Text(AppLocalizations.of(context)!.noRestaurantsFound));
-    }
-
     return Column(
       children: [
         if (showFilters) _buildFilterPanel(),
         Expanded(
-          child: displayRestaurants.isEmpty
-              ? Center(child: Text(AppLocalizations.of(context)!.noRestaurantsMatchFilters))
-              : ListView.builder(
-                  itemCount: displayRestaurants.length,
-                  itemBuilder: (context, index) =>
-                      _buildRestaurantCard(displayRestaurants[index]),
-                ),
+          child: restaurants.isEmpty
+              ? Center(child: Text(AppLocalizations.of(context)!.noRestaurantsFound))
+              : displayRestaurants.isEmpty
+                  ? Center(child: Text(AppLocalizations.of(context)!.noRestaurantsMatchFilters))
+                  : ListView.builder(
+                      itemCount: displayRestaurants.length,
+                      itemBuilder: (context, index) =>
+                          _buildRestaurantCard(displayRestaurants[index]),
+                    ),
         ),
       ],
     );
@@ -1274,6 +1747,8 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
 
   Widget _buildRestaurantHeader(
       Restaurant restaurant, bool hasItems, Cart restaurantCart) {
+    final isFav = _favoriteIds.contains(restaurant.id);
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       children: [
         Expanded(
@@ -1291,6 +1766,19 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
         ),
         if (hasItems) _buildCartBadge(restaurantCart),
         if (restaurant.delivers) _buildDeliveryBadge(),
+        IconButton(
+          icon: Icon(
+            isFav ? Icons.favorite : Icons.favorite_border,
+            color: isFav ? Colors.red : Colors.grey,
+          ),
+          tooltip: isFav ? l10n.removeFromFavorites : l10n.addToFavorites,
+          onPressed: () => _toggleFavorite(restaurant.id),
+        ),
+        IconButton(
+          icon: const Icon(Icons.share_outlined, color: Colors.grey),
+          tooltip: l10n.shareRestaurant,
+          onPressed: () => _shareRestaurant(restaurant),
+        ),
       ],
     );
   }
@@ -1486,24 +1974,6 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
     );
   }
 
-  Widget _buildMenuUpdatedRow(Restaurant restaurant) {
-    // Use menuUpdatedAt (item-level changes) if available, fall back to updatedAt
-    final ts = restaurant.menuUpdatedAt ?? restaurant.updatedAt;
-    if (ts == null) return const SizedBox.shrink();
-    final locale = Localizations.localeOf(context).languageCode;
-    final formatted = DateFormat.yMMMd(locale).format(ts.toLocal());
-    return Row(
-      children: [
-        const Icon(Icons.update, size: 14, color: Color(0xFF7C3AED)),
-        const SizedBox(width: 4),
-        Text(
-          AppLocalizations.of(context)!.menuLastUpdated(formatted),
-          style: const TextStyle(fontSize: 12, color: Color(0xFF7C3AED)),
-        ),
-      ],
-    );
-  }
-
   // ============ FILTER PANEL ============
 
   Widget _buildFilterPanel() {
@@ -1531,6 +2001,10 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
           const SizedBox(height: 12),
           _buildDeliveryFilter(),
           const SizedBox(height: 12),
+          if (_authService.isLoggedIn) ...[
+            _buildFavoritesFilter(),
+            const SizedBox(height: 12),
+          ],
           if (cuisineTypes.isNotEmpty) ...[
             _buildCuisineFilter(cuisineTypes),
             const SizedBox(height: 12),
@@ -1553,6 +2027,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
         if (selectedCuisineTypes.isNotEmpty ||
             selectedPaymentMethods.isNotEmpty ||
             filterDeliveryOnly != null ||
+            filterFavoritesOnly ||
             _filterByLocation)
           TextButton(
             onPressed: () {
@@ -1560,6 +2035,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
                 selectedCuisineTypes.clear();
                 selectedPaymentMethods.clear();
                 filterDeliveryOnly = null;
+                filterFavoritesOnly = false;
                 _filterByLocation = false;
                 _addressController.clear();
                 userLatitude = null;
@@ -1752,6 +2228,24 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
         });
       },
       activeThumbColor: const Color(0xFF7C3AED),
+      contentPadding: EdgeInsets.zero,
+    );
+  }
+
+  Widget _buildFavoritesFilter() {
+    return SwitchListTile(
+      title: Text(AppLocalizations.of(context)!.favoritesOnly),
+      secondary: Icon(
+        filterFavoritesOnly ? Icons.favorite : Icons.favorite_border,
+        color: filterFavoritesOnly ? Colors.red : Colors.grey,
+      ),
+      value: filterFavoritesOnly,
+      onChanged: (value) {
+        setState(() {
+          filterFavoritesOnly = value;
+        });
+      },
+      activeThumbColor: Colors.red,
       contentPadding: EdgeInsets.zero,
     );
   }

@@ -422,6 +422,72 @@ abstract class AppLocalizations {
   /// **'Payment Methods'**
   String get paymentMethodsFilter;
 
+  /// Label for favorites only filter
+  ///
+  /// In en, this message translates to:
+  /// **'Favorites Only'**
+  String get favoritesOnly;
+
+  /// Menu item to jump to favorites
+  ///
+  /// In en, this message translates to:
+  /// **'My Favorites'**
+  String get myFavorites;
+
+  /// Label shown when no favorites are saved
+  ///
+  /// In en, this message translates to:
+  /// **'No favorites yet'**
+  String get noFavoritesYet;
+
+  /// Tooltip for adding to favorites
+  ///
+  /// In en, this message translates to:
+  /// **'Add to favorites'**
+  String get addToFavorites;
+
+  /// Tooltip for removing from favorites
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from favorites'**
+  String get removeFromFavorites;
+
+  /// Snackbar shown when guest tries to favorite
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to save favorites'**
+  String get signInToFavorite;
+
+  /// Tooltip for the share button on a restaurant card
+  ///
+  /// In en, this message translates to:
+  /// **'Share restaurant'**
+  String get shareRestaurant;
+
+  /// Snackbar shown after copying the share link
+  ///
+  /// In en, this message translates to:
+  /// **'Link copied to clipboard!'**
+  String get linkCopied;
+
+  /// Menu item label for generating a QR code
+  ///
+  /// In en, this message translates to:
+  /// **'Generate QR Code'**
+  String get generateQrCode;
+
+  /// Dialog title for the QR code
+  ///
+  /// In en, this message translates to:
+  /// **'QR Code'**
+  String get qrCodeTitle;
+
+  /// Button to download the QR code as PNG
+  ///
+  /// In en, this message translates to:
+  /// **'Download PNG'**
+  String get downloadQrCode;
+
   /// Label for the filters section
   ///
   /// In en, this message translates to:
