@@ -29,6 +29,7 @@ interface RestaurantInfo {
 interface RequestBody {
   restaurant: RestaurantInfo
   restaurantId: number
+  appBaseUrl?: string
 }
 
 Deno.serve(async (req: Request) => {
@@ -89,10 +90,16 @@ body, #loading, #content,
 .item-variants (width:100%; padding-left:1.2rem; margin-top:.5rem),
 .variant (display:flex; justify-content:space-between; padding:.2rem 0; font-size:.93rem),
 .variant-name (font-style:italic; color:#555), .variant-price (font-weight:bold; cuisine accent color),
-.menu-footer (text-align:center; color:#aaa; padding:2rem; font-size:.85rem; border-top:1px solid #eee)
+.menu-footer (text-align:center; color:#aaa; padding:2rem; font-size:.85rem; border-top:1px solid #eee),
+.menu-categories (padding:1.5rem 2rem),
+.categories-grid (display:grid; grid-template-columns:1fr 1fr; column-gap:2.5rem; row-gap:0; align-items:start; overflow:hidden),
+.qr-section (text-align:center; padding:2rem 1rem; margin-top:1.5rem; border-top:2px solid accent color),
+.qr-label (font-size:.9rem; color:#666; margin-bottom:.75rem; font-weight:bold; letter-spacing:.05em),
+.qr-img (display:block; margin:0 auto; border-radius:8px; border:4px solid accent color),
+.qr-url (font-size:.72rem; color:#aaa; margin-top:.5rem; word-break:break-all)
 
 Design a professional, elegant look matching the cuisine type. System fonts only (Georgia, Arial, sans-serif). No external resources.
-Max 60 CSS rules. Include @media print (page-break-inside:avoid on .category) and @media (max-width:600px).
+Max 75 CSS rules. Include @media print (page-break-inside:avoid on .category) and @media (max-width:768px) (set .categories-grid to single column 1fr; reduce banner height; reduce padding).
 Return ONLY the <style>...</style> block. No other HTML, no explanations.`
 
     // ── Claude is now asked only for CSS; the HTML+JS template is in buildMenuHtml() below ──
@@ -106,7 +113,7 @@ Return ONLY the <style>...</style> block. No other HTML, no explanations.`
       },
       body: JSON.stringify({
         model: 'claude-opus-4-5',
-        max_tokens: 2048,
+        max_tokens: 4096,
         messages: [{ role: 'user', content: cssPrompt }],
       }),
     })
@@ -129,6 +136,10 @@ Return ONLY the <style>...</style> block. No other HTML, no explanations.`
     if (!styleBlock.startsWith('<style')) {
       styleBlock = '<style>\n' + styleBlock + '\n</style>'
     }
+    // If Claude truncated the response, the closing tag will be missing — close it.
+    if (!styleBlock.includes('</style>')) {
+      styleBlock = styleBlock + '\n}</style>'
+    }
     // Escape backticks so the style block is safe inside a TypeScript template literal
     styleBlock = styleBlock.replace(/`/g, "'")
 
@@ -136,8 +147,9 @@ Return ONLY the <style>...</style> block. No other HTML, no explanations.`
     const safeUrl = (supabaseUrl ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'")
     const safeKey = (supabaseAnonKey ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'")
     const safeId = String(restaurantId ?? '0')
+    const safeAppBase = (body.appBaseUrl ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'")
 
-    const html = buildMenuHtml(safeTitle, styleBlock, safeUrl, safeKey, safeId)
+    const html = buildMenuHtml(safeTitle, styleBlock, safeUrl, safeKey, safeId, safeAppBase)
 
     return new Response(JSON.stringify({ html }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -157,6 +169,7 @@ function buildMenuHtml(
   supabaseUrl: string,
   supabaseAnonKey: string,
   restaurantId: string,
+  appBaseUrl: string,
 ): string {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -186,6 +199,7 @@ function buildMenuHtml(
     var t = T[lang] || T['en'];
     function loc(o, f) { return (o.translations && o.translations[lang] && o.translations[lang][f]) || o[f]; }
     function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    var APP_BASE_URL = '${appBaseUrl}';
     var SUPABASE_URL = '${supabaseUrl}';
     var SUPABASE_ANON_KEY = '${supabaseAnonKey}';
     var RESTAURANT_ID = ${restaurantId};
@@ -247,7 +261,7 @@ function buildMenuHtml(
         h += '</div>';
       }
       he.innerHTML = h;
-      var c = '';
+      var c = '<div class="menu-categories"><div class="categories-grid">';
       cats.forEach(function(cat) {
         var items = (cat.items || []).filter(function(i) { return i.available !== false; });
         if (!items.length) return;
@@ -276,6 +290,15 @@ function buildMenuHtml(
         });
         c += '</div>';
       });
+      c += '</div></div>'; // close categories-grid and menu-categories
+      if (APP_BASE_URL) {
+        var qrData = APP_BASE_URL + '/?r=' + RESTAURANT_ID;
+        c += '<div class="qr-section">';
+        c += '<p class="qr-label">Scan to view the digital menu</p>';
+        c += '<img class="qr-img" src="https://api.qrserver.com/v1/create-qr-code/?data=' + encodeURIComponent(qrData) + '&size=160x160&margin=4" alt="QR Code">';
+        c += '<p class="qr-url">' + esc(qrData) + '</p>';
+        c += '</div>';
+      }
       c += '<div class="menu-footer"><p>' + esc(r.name) + '</p></div>';
       catEl.innerHTML = c;
     }

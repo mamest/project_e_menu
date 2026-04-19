@@ -12,6 +12,21 @@ class HtmlMenuService {
   static String get _supabaseUrl => dotenv.env['SUPABASE_URL'] ?? '';
   static String get _anonKey => dotenv.env['SUPABASE_ANON_KEY'] ?? '';
 
+  /// Stable base URL for QR codes (mirrors restaurant_list_page.dart).
+  static String get _appBaseUrl {
+    final configured = dotenv.env['APP_BASE_URL'];
+    if (configured != null && configured.trim().isNotEmpty) {
+      return configured.trim().replaceAll(RegExp(r'/$'), '');
+    }
+    // Use the browser's window.location.origin directly — more reliable than
+    // Uri.base.origin which can return an empty string in some Flutter Web builds.
+    final origin = html.window.location.origin;
+    if (origin != null && origin.isNotEmpty && origin != 'null') {
+      return origin;
+    }
+    return '';
+  }
+
   /// Calls the menu-html edge function which uses Claude to generate a
   /// beautifully styled HTML menu, then opens it in a new browser tab so
   /// the user can print / save as PDF.
@@ -23,6 +38,7 @@ class HtmlMenuService {
 
     final payload = {
       'restaurantId': restaurant.id,
+      'appBaseUrl': _appBaseUrl,
       'restaurant': {
         'name': restaurant.name,
         'address': restaurant.address,

@@ -4,6 +4,8 @@ import 'dart:html' as html;
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/ai_menu_parser.dart';
 import '../services/geocoding_service.dart';
@@ -558,15 +560,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Restaurant "${_nameController.text.trim()}" saved successfully!'),
-            backgroundColor: const Color(0xFF7C3AED),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-
-        // Clear state and go back
+        await _showQrAfterSave(restaurantId, _nameController.text.trim());
         Navigator.pop(context, true);
       }
     } catch (e) {
@@ -653,15 +647,7 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Menu updated successfully with new data!'),
-            backgroundColor: const Color(0xFF7C3AED),
-            duration: Duration(seconds: 3),
-          ),
-        );
-
-        // Clear state and go back
+        await _showQrAfterSave(restaurantId, _nameController.text.trim());
         Navigator.pop(context, true);
       }
     } catch (e) {
@@ -807,6 +793,187 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
     nameController.dispose();
     priceController.dispose();
     descController.dispose();
+  }
+
+  /// Returns the stable base URL for QR codes (mirrors restaurant_list_page.dart).
+  String get _appBaseUrl {
+    final configured = dotenv.env['APP_BASE_URL'];
+    if (configured != null && configured.trim().isNotEmpty) {
+      return configured.trim().replaceAll(RegExp(r'/$'), '');
+    }
+    try {
+      return Uri.base.origin;
+    } catch (_) {
+      return '';
+    }
+  }
+
+  Widget _buildCategoryCard(int catIndex, CategoryData category) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: ExpansionTile(
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                _getCategoryName(catIndex),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.edit, size: 20),
+              onPressed: () => _editCategory(catIndex),
+              tooltip: 'Edit category name',
+            ),
+          ],
+        ),
+        subtitle: Text('${category.items.length} items'),
+        children: category.items.asMap().entries.map((itemEntry) {
+          final itemIndex = itemEntry.key;
+          final item = itemEntry.value;
+          return ListTile(
+            title: Row(
+              children: [
+                Expanded(child: Text(_getItemName(catIndex, itemIndex))),
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 18),
+                  onPressed: () => _editItem(catIndex, itemIndex),
+                  tooltip: 'Edit item',
+                ),
+              ],
+            ),
+            subtitle: _getItemDescription(catIndex, itemIndex) != null
+                ? Text(_getItemDescription(catIndex, itemIndex)!)
+                : null,
+            trailing: item.hasVariants && item.variants != null
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: item.variants!
+                        .map((v) => Text(
+                              '${v.name}: \u20ac${v.price.toStringAsFixed(2)}',
+                              style: const TextStyle(fontSize: 12),
+                            ))
+                        .toList(),
+                  )
+                : Text(
+                    _getItemPrice(catIndex, itemIndex) != null
+                        ? '\u20ac${_getItemPrice(catIndex, itemIndex)!.toStringAsFixed(2)}'
+                        : '',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Future<void> _downloadQrCodeFromUrl(String url, String name) async {
+    try {
+      final qrPainter = QrPainter(
+        data: url,
+        version: QrVersions.auto,
+        eyeStyle: const QrEyeStyle(
+          eyeShape: QrEyeShape.square,
+          color: Color(0xFF6D28D9),
+        ),
+        dataModuleStyle: const QrDataModuleStyle(
+          dataModuleShape: QrDataModuleShape.square,
+          color: Color(0xFF1E1E2E),
+        ),
+      );
+      const size = 1024.0;
+      final imageData = await qrPainter.toImageData(size);
+      if (imageData == null) return;
+      final bytes = imageData.buffer.asUint8List();
+      final blob = html.Blob([bytes], 'image/png');
+      final objectUrl = html.Url.createObjectUrlFromBlob(blob);
+      html.AnchorElement(href: objectUrl)
+        ..setAttribute('download', '${name.replaceAll(' ', '_')}_qr.png')
+        ..click();
+      html.Url.revokeObjectUrl(objectUrl);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Download failed: \$e')),
+      );
+    }
+  }
+
+  Future<void> _showQrAfterSave(int restaurantId, String restaurantName) async {
+    final url = '\$_appBaseUrl/?r=\$restaurantId';
+    if (!mounted) return;
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Row(children: [
+          Icon(Icons.check_circle, color: Color(0xFF7C3AED)),
+          SizedBox(width: 8),
+          Text('Saved! Your QR Code',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        ]),
+        content: SizedBox(
+          width: 280,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '\$restaurantName was saved successfully.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: 240,
+                height: 240,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFDDD6FE), width: 2),
+                ),
+                padding: const EdgeInsets.all(12),
+                child: QrImageView(
+                  data: url,
+                  version: QrVersions.auto,
+                  size: 216,
+                  backgroundColor: Colors.white,
+                  eyeStyle: const QrEyeStyle(
+                    eyeShape: QrEyeShape.square,
+                    color: Color(0xFF6D28D9),
+                  ),
+                  dataModuleStyle: const QrDataModuleStyle(
+                    dataModuleShape: QrDataModuleShape.square,
+                    color: Color(0xFF1E1E2E),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                url,
+                style: const TextStyle(fontSize: 10, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          ElevatedButton.icon(
+            icon: const Icon(Icons.download),
+            label: const Text('Download PNG'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF7C3AED),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => _downloadQrCodeFromUrl(url, restaurantName),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Done'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -1179,67 +1346,45 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
                 ],
               ),
               const SizedBox(height: 8),
-              ...(_extractedData!.categories.asMap().entries.map((categoryEntry) {
-                final catIndex = categoryEntry.key;
-                final category = categoryEntry.value;
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: ExpansionTile(
-                    title: Row(
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final cats =
+                      _extractedData!.categories.asMap().entries.toList();
+                  if (constraints.maxWidth > 680) {
+                    final leftCats =
+                        cats.where((e) => e.key.isEven).toList();
+                    final rightCats =
+                        cats.where((e) => e.key.isOdd).toList();
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: Text(
-                            _getCategoryName(catIndex),
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          child: Column(
+                            children: leftCats
+                                .map((e) =>
+                                    _buildCategoryCard(e.key, e.value))
+                                .toList(),
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.edit, size: 20),
-                          onPressed: () => _editCategory(catIndex),
-                          tooltip: 'Edit category name',
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            children: rightCats
+                                .map((e) =>
+                                    _buildCategoryCard(e.key, e.value))
+                                .toList(),
+                          ),
                         ),
                       ],
-                    ),
-                    subtitle: Text('${category.items.length} items'),
-                    children: category.items.asMap().entries.map((itemEntry) {
-                      final itemIndex = itemEntry.key;
-                      final item = itemEntry.value;
-                      return ListTile(
-                        title: Row(
-                          children: [
-                            Expanded(child: Text(_getItemName(catIndex, itemIndex))),
-                            IconButton(
-                              icon: const Icon(Icons.edit, size: 18),
-                              onPressed: () => _editItem(catIndex, itemIndex),
-                              tooltip: 'Edit item',
-                            ),
-                          ],
-                        ),
-                        subtitle: _getItemDescription(catIndex, itemIndex) != null
-                            ? Text(_getItemDescription(catIndex, itemIndex)!)
-                            : null,
-                        trailing: item.hasVariants && item.variants != null
-                            ? Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: item.variants!
-                                    .map((v) => Text(
-                                          '${v.name}: €${v.price.toStringAsFixed(2)}',
-                                          style: const TextStyle(fontSize: 12),
-                                        ))
-                                    .toList(),
-                              )
-                            : Text(
-                                _getItemPrice(catIndex, itemIndex) != null
-                                    ? '€${_getItemPrice(catIndex, itemIndex)!.toStringAsFixed(2)}'
-                                    : '',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                      );
-                    }).toList(),
-                  ),
-                );
-              }).toList()),
+                    );
+                  }
+                  return Column(
+                    children: cats
+                        .map((e) => _buildCategoryCard(e.key, e.value))
+                        .toList(),
+                  );
+                },
+              ),
 
               const SizedBox(height: 24),
               ElevatedButton.icon(
