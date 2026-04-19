@@ -1,4 +1,7 @@
-﻿import 'dart:typed_data';
+﻿import 'dart:async';
+import 'dart:convert';
+import 'dart:html' as html;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -74,6 +77,50 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
     return const {'jpg', 'jpeg', 'png', 'gif', 'webp'}.contains(ext);
   }
 
+  // 1 MB — images larger than this are compressed before sending to the AI.
+  static const int _maxImageBytes = 1 * 1024 * 1024;
+  // 20 MB — PDFs larger than this cannot be compressed client-side; warn the user.
+  static const int _maxPdfBytes = 20 * 1024 * 1024;
+  // Maximum image dimension (width or height) after compression.
+  static const int _maxImageDimension = 1920;
+
+  /// Resizes and re-encodes an image as JPEG (85 % quality) when it exceeds
+  /// [_maxImageBytes]. Uses the browser Canvas API — no extra package needed.
+  /// Returns the original bytes unchanged when compression is not required.
+  static Future<Uint8List> _compressImageIfNeeded(Uint8List bytes) async {
+    if (bytes.length <= _maxImageBytes) return bytes;
+
+    final blob = html.Blob([bytes]);
+    final objectUrl = html.Url.createObjectUrlFromBlob(blob);
+
+    final imgElement = html.ImageElement();
+    final loadCompleter = Completer<void>();
+    imgElement.onLoad.first.then((_) => loadCompleter.complete());
+    imgElement.onError.first
+        .then((_) => loadCompleter.completeError('Image load failed'));
+    imgElement.src = objectUrl;
+    await loadCompleter.future;
+    html.Url.revokeObjectUrl(objectUrl);
+
+    int w = imgElement.naturalWidth ?? _maxImageDimension;
+    int h = imgElement.naturalHeight ?? _maxImageDimension;
+
+    if (w > _maxImageDimension || h > _maxImageDimension) {
+      if (w >= h) {
+        h = (h * _maxImageDimension / w).round();
+        w = _maxImageDimension;
+      } else {
+        w = (w * _maxImageDimension / h).round();
+        h = _maxImageDimension;
+      }
+    }
+
+    final canvas = html.CanvasElement(width: w, height: h);
+    canvas.context2D.drawImageScaled(imgElement, 0, 0, w, h);
+    final dataUrl = canvas.toDataUrl('image/jpeg', 0.85);
+    return base64Decode(dataUrl.split(',').last);
+  }
+
   Future<void> _pickMenuFile() async {
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -96,22 +143,56 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
         return;
       }
 
-      setState(() {
-        _clearFiles();
-        if (hasPdf) {
-          final pdfFile = files.first;
-          _fileBytes = pdfFile.bytes;
-          _fileName = pdfFile.name;
-        } else {
-          for (final f in files) {
-            if (f.bytes != null) {
-              _imageBytesList.add(f.bytes!);
-              _imageNameList.add(f.name);
-            }
-          }
+      // ---- size checks & compression ----
+      if (hasPdf) {
+        final pdfFile = files.first;
+        final bytes = pdfFile.bytes;
+        if (bytes != null && bytes.length > _maxPdfBytes) {
+          setState(() {
+            _errorMessage =
+                'PDF is too large (${(bytes.length / 1024 / 1024).toStringAsFixed(1)} MB). '
+                'Maximum allowed size is 20 MB. Please reduce the PDF size and try again.';
+          });
+          return;
         }
-        _errorMessage = null;
-      });
+        setState(() {
+          _clearFiles();
+          _fileBytes = bytes;
+          _fileName = pdfFile.name;
+          _errorMessage = null;
+        });
+      } else {
+        // Compress images that are too large
+        final imageFiles =
+            files.where((f) => f.bytes != null).toList();
+        int compressedCount = 0;
+        final compressedImages = <Uint8List>[];
+        for (final f in imageFiles) {
+          final original = f.bytes!;
+          final compressed = await _compressImageIfNeeded(original);
+          if (compressed.length < original.length) compressedCount++;
+          compressedImages.add(compressed);
+        }
+        setState(() {
+          _clearFiles();
+          for (int i = 0; i < imageFiles.length; i++) {
+            _imageBytesList.add(compressedImages[i]);
+            _imageNameList.add(imageFiles[i].name);
+          }
+          _errorMessage = null;
+        });
+        if (compressedCount > 0 && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  '$compressedCount image${compressedCount > 1 ? 's were' : ' was'} '
+                  'automatically compressed to speed up AI processing.'),
+              backgroundColor: const Color(0xFF7C3AED),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
     } catch (e) {
       setState(() {
         _errorMessage = 'Error picking file: $e';

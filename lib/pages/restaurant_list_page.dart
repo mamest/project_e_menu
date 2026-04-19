@@ -856,6 +856,19 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
   }
 
   // ============ QR CODE ============
+  // TODO(native-apps): When building the Android/iOS app, enable deep linking so
+  //   scanning the QR code opens the app directly if it is installed, instead of
+  //   falling back to the browser.
+  //   Steps required:
+  //   1. Add the `app_links` package to pubspec.yaml.
+  //   2. In the native app, listen to incoming links and route /?r=<id> to the
+  //      correct restaurant's menu screen.
+  //   3. Android: declare <intent-filter> with autoVerify=true in AndroidManifest.xml
+  //      and host /.well-known/assetlinks.json on APP_BASE_URL domain.
+  //   4. iOS: enable Associated Domains (applinks:<domain>) in Entitlements.plist
+  //      and host /.well-known/apple-app-site-association on APP_BASE_URL domain.
+  //   The QR code URL format (https://<domain>/?r=<id>) already matches and needs
+  //   no changes.
 
   Future<void> _pickRestaurantForQr() async {
     final myRestaurants = await _loadOwnerRestaurants();
@@ -934,9 +947,24 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
     }
   }
 
+  /// Returns the stable base URL for QR codes.
+  /// Prefers APP_BASE_URL from .env so QR codes survive domain / platform changes.
+  /// Falls back to the current browser origin for local development only.
+  String get _appBaseUrl {
+    final configured = dotenv.env['APP_BASE_URL'];
+    if (configured != null && configured.trim().isNotEmpty) {
+      return configured.trim().replaceAll(RegExp(r'/$'), '');
+    }
+    // Fallback: works only in Flutter Web. Native apps should always have APP_BASE_URL set.
+    try {
+      return Uri.base.origin;
+    } catch (_) {
+      return '';
+    }
+  }
+
   void _showQrCodeDialog(Restaurant restaurant) {
-    final url =
-        '${Uri.base.origin}/?r=${restaurant.id}';
+    final url = '$_appBaseUrl/?r=${restaurant.id}';
     final l10n = AppLocalizations.of(context)!;
 
     showDialog(
