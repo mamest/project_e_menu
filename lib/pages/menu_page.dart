@@ -24,13 +24,14 @@ class MenuPage extends StatefulWidget {
   State<MenuPage> createState() => _MenuPageState();
 }
 
-class _MenuPageState extends State<MenuPage> {
+class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
   List<Category> categories = [];
   List<Deal> _activeDeals = []; // today-filtered (for price discounts)
   List<Deal> _allDeals = [];   // all active=true (for display banner)
   bool loading = true;
   String? errorMessage;
   late final Cart cart;
+  TabController? _tabController;
 
   // Google Places photos — fetched lazily from the edge function
   final GooglePlacesService _googlePlacesService = GooglePlacesService();
@@ -46,6 +47,12 @@ class _MenuPageState extends State<MenuPage> {
         widget.restaurant.googleData['photo_names'] != null) {
       _loadGooglePhotos();
     }
+  }
+
+  @override
+  void dispose() {
+    _tabController?.dispose();
+    super.dispose();
   }
 
   // Natural sort comparison for item numbers (handles "1", "2", "10", "1a", "2b" etc.)
@@ -159,11 +166,14 @@ class _MenuPageState extends State<MenuPage> {
             .toList();
         final todayDeals = allDeals.where((d) => d.isActiveToday).toList();
 
+        final ctrl = TabController(length: nonEmptyCats.length, vsync: this);
+        _tabController?.dispose();
         setState(() {
           categories = nonEmptyCats;
           _allDeals = allDeals;
           _activeDeals = todayDeals;
           loading = false;
+          _tabController = ctrl;
         });
         _loadCategoryImages();
       }
@@ -249,58 +259,58 @@ class _MenuPageState extends State<MenuPage> {
             .toList() ??
         [];
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header row
-          Row(
-            children: [
-              const Text(
-                'G',
-                style: TextStyle(
-                  fontSize: 16,
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+        childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+        title: Row(
+          children: [
+            const Text(
+              'G',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF4285F4),
+              ),
+            ),
+            const SizedBox(width: 6),
+            if (rating != null) ...[
+              _buildStars(rating),
+              const SizedBox(width: 6),
+              Text(
+                rating.toStringAsFixed(1),
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF4285F4),
+                  fontSize: 15,
                 ),
               ),
-              const SizedBox(width: 6),
-              if (rating != null) ...[
-                _buildStars(rating),
-                const SizedBox(width: 6),
+              if (reviewCount != null) ...[
+                const SizedBox(width: 4),
                 Text(
-                  rating.toStringAsFixed(1),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
+                  '($reviewCount)',
+                  style: const TextStyle(color: Colors.black54, fontSize: 13),
                 ),
-                if (reviewCount != null) ...[
-                  const SizedBox(width: 4),
-                  Text(
-                    '($reviewCount)',
-                    style: const TextStyle(color: Colors.black54, fontSize: 13),
-                  ),
-                ],
               ],
-              const Spacer(),
-              if (mapsUri != null)
-                TextButton.icon(
-                  onPressed: () => launchUrl(Uri.parse(mapsUri)),
-                  icon: const Icon(Icons.open_in_new, size: 14),
-                  label: const Text('Google Maps', style: TextStyle(fontSize: 13)),
-                  style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF4285F4),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  ),
-                ),
             ],
-          ),
-
+          ],
+        ),
+        children: [
+          if (mapsUri != null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => launchUrl(Uri.parse(mapsUri)),
+                icon: const Icon(Icons.open_in_new, size: 14),
+                label: const Text('Google Maps', style: TextStyle(fontSize: 13)),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF4285F4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                ),
+              ),
+            ),
           // Photo strip
           if (_googlePhotosLoaded && _googlePhotoUris.isNotEmpty) ...[
-            const SizedBox(height: 8),
             SizedBox(
               height: 110,
               child: ListView.separated(
@@ -319,9 +329,9 @@ class _MenuPageState extends State<MenuPage> {
                 ),
               ),
             ),
+            const SizedBox(height: 8),
           ] else if (!_googlePhotosLoaded &&
               widget.restaurant.googleData['photo_names'] != null) ...[
-            const SizedBox(height: 8),
             const SizedBox(
               height: 110,
               child: Center(
@@ -332,13 +342,10 @@ class _MenuPageState extends State<MenuPage> {
                 ),
               ),
             ),
-          ],
-
-          // Reviews
-          if (reviews.isNotEmpty) ...[
             const SizedBox(height: 8),
-            ...reviews.take(3).map((r) => _buildReviewCard(r)),
           ],
+          // Reviews
+          if (reviews.isNotEmpty) ...reviews.take(3).map((r) => _buildReviewCard(r)),
         ],
       ),
     );
@@ -542,6 +549,70 @@ class _MenuPageState extends State<MenuPage> {
     );
   }
 
+  Widget _buildCategoryItemsList(Category cat, int idx) {
+    final Color color = _kCategoryColors[idx % _kCategoryColors.length];
+    final availableItems = cat.items.where((i) => i.available).toList();
+    if (availableItems.isEmpty) {
+      return const Center(child: Text('No items available'));
+    }
+    final locale = Localizations.localeOf(context).languageCode;
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 8),
+      itemCount: availableItems.length + 1,
+      itemBuilder: (context, i) {
+        if (i == 0) {
+          return _buildCategoryImageHeader(cat, color, locale);
+        }
+        return _buildItemTile(availableItems[i - 1], color, cat.id);
+      },
+    );
+  }
+
+  Widget _buildCategoryImageHeader(Category cat, Color color, String locale) {
+    if (cat.imageUrl == null || cat.imageUrl!.isEmpty) return const SizedBox.shrink();
+    return Stack(
+      children: [
+        Container(
+          height: 160,
+          width: double.infinity,
+          color: color.withOpacity(0.12),
+          child: Image.network(
+            cat.imageUrl!,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+          ),
+        ),
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  color.withOpacity(0.75),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 16,
+          bottom: 12,
+          child: Text(
+            cat.localizedName(locale),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              shadows: [Shadow(blurRadius: 4, color: Colors.black45)],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildCategoryTile(Category cat, int idx) {
     final Color color = _kCategoryColors[idx % _kCategoryColors.length];
     final availableItems = cat.items.where((i) => i.available).toList();
@@ -642,13 +713,32 @@ class _MenuPageState extends State<MenuPage> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  if (discountedPrice != null)
-                    Text(
-                      '\u20ac${item.price!.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                          fontSize: 11,
-                          decoration: TextDecoration.lineThrough,
-                          color: Colors.grey),
+                  if (discountedPrice != null && deal != null)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '\u20ac${item.price!.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                              fontSize: 11,
+                              decoration: TextDecoration.lineThrough,
+                              color: Colors.grey),
+                        ),
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: Colors.orange[700],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(deal.discountLabel,
+                              style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                      ],
                     ),
                   Container(
                     padding:
@@ -665,20 +755,6 @@ class _MenuPageState extends State<MenuPage> {
                             fontWeight: FontWeight.bold,
                             color: Colors.white)),
                   ),
-                  if (discountedPrice != null && deal != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 5, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: Colors.orange[700],
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(deal.discountLabel,
-                          style: const TextStyle(
-                              fontSize: 10,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold)),
-                    ),
                 ],
               ),
               const SizedBox(width: 6),
@@ -1447,27 +1523,41 @@ class _MenuPageState extends State<MenuPage> {
                     ))
                   : categories.isEmpty
                       ? Center(child: Text(AppLocalizations.of(context)!.noMenuItemsFound))
-                      : CustomScrollView(
-                          slivers: [
-                            if (_allDeals.isNotEmpty)
-                              SliverToBoxAdapter(
-                                child: _buildDealsSection(),
-                              ),
+                      : Column(
+                          children: [
+                            if (_allDeals.isNotEmpty) _buildDealsSection(),
                             if (widget.restaurant.googlePlaceId != null &&
                                 widget.restaurant.googleData.isNotEmpty)
-                              SliverToBoxAdapter(
-                                child: _buildGoogleSection(),
-                              ),
-                            SliverPadding(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              sliver: SliverList(
-                                delegate: SliverChildBuilderDelegate(
-                                  (context, idx) =>
-                                      _buildCategoryTile(categories[idx], idx),
-                                  childCount: categories.length,
+                              _buildGoogleSection(),
+                            if (_tabController != null) ...[
+                              Container(
+                                color: Colors.white,
+                                child: TabBar(
+                                  controller: _tabController!,
+                                  isScrollable: true,
+                                  tabAlignment: TabAlignment.start,
+                                  labelColor: const Color(0xFF7C3AED),
+                                  unselectedLabelColor: Colors.grey,
+                                  indicatorColor: const Color(0xFF7C3AED),
+                                  labelStyle: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                  tabs: categories.map((cat) {
+                                    final locale = Localizations.localeOf(context).languageCode;
+                                    return Tab(text: cat.localizedName(locale));
+                                  }).toList(),
                                 ),
                               ),
-                            ),
+                              Expanded(
+                                child: TabBarView(
+                                  controller: _tabController!,
+                                  children: categories.asMap().entries.map((e) =>
+                                    _buildCategoryItemsList(e.value, e.key),
+                                  ).toList(),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
         ),

@@ -113,4 +113,27 @@ class GooglePlacesService {
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     return data['photoUri'] as String?;
   }
+
+  /// Downloads a Google Places photo by [photoName] and uploads it to
+  /// Supabase Storage (menu-designs bucket). Returns a permanent public URL.
+  Future<String?> uploadCategoryPhoto(String photoName, int restaurantId) async {
+    try {
+      final response = await http.post(
+        _proxyUri,
+        headers: _headers(),
+        body: jsonEncode({
+          'action': 'upload_photo_to_storage',
+          'photoName': photoName,
+          'restaurantId': restaurantId,
+        }),
+      );
+
+      if (response.statusCode != 200) return null;
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return data['publicUrl'] as String?;
+    } catch (_) {
+      return null;
+    }
+  }
 }

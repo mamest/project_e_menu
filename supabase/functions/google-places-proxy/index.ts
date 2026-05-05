@@ -173,6 +173,47 @@ serve(async (req: Request): Promise<Response> => {
       return _json({ photoUri: photoData.photoUri ?? null })
     }
 
+    // ── upload_photo_to_storage ───────────────────────────────────────────────
+    if (body.action === 'upload_photo_to_storage') {
+      if (!body.photoName) return _err('photoName is required', 400)
+      if (!body.restaurantId) return _err('restaurantId is required', 400)
+
+      // Step 1: resolve photo URI
+      const photoRes = await fetch(
+        `${PLACES_BASE}/${body.photoName}/media?maxWidthPx=1200&skipHttpRedirect=true`,
+        { headers: { 'X-Goog-Api-Key': apiKey } },
+      )
+      const photoText = await photoRes.text()
+      if (!photoRes.ok) return _err(`Google photo URI error ${photoRes.status}: ${photoText}`, 502)
+
+      const photoData = JSON.parse(photoText) as { photoUri?: string }
+      if (!photoData.photoUri) return _err('No photoUri in response', 502)
+
+      // Step 2: fetch image bytes
+      const imgRes = await fetch(photoData.photoUri)
+      if (!imgRes.ok) return _err(`Failed to fetch image bytes: ${imgRes.status}`, 502)
+      const imgBytes = new Uint8Array(await imgRes.arrayBuffer())
+      const contentType = imgRes.headers.get('content-type') ?? 'image/jpeg'
+
+      // Step 3: upload to Supabase storage
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      const adminClient = createClient(supabaseUrl, serviceRoleKey)
+
+      const filename = `category-images/${body.restaurantId}/${Date.now()}.jpg`
+      const { error: uploadError } = await adminClient.storage
+        .from('menu-designs')
+        .upload(filename, imgBytes, { contentType, upsert: true })
+
+      if (uploadError) return _err(uploadError.message, 500)
+
+      const { data: { publicUrl } } = adminClient.storage
+        .from('menu-designs')
+        .getPublicUrl(filename)
+
+      return _json({ publicUrl })
+    }
+
     return _err(`Unknown action: ${body.action}`, 400)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)

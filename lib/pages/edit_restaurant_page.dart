@@ -1030,8 +1030,25 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
 
   Future<void> _openUnsplashPicker() async {
     final query = '${_cuisineTypeController.text.trim()} food restaurant'.trim();
-    final picked = await UnsplashPickerDialog.show(context, initialQuery: query.isEmpty ? 'restaurant food' : query);
-    if (picked != null && mounted) setState(() => _imageUrl = picked);
+    final googlePhotoNames = _googleData['photo_names'] != null
+        ? List<String>.from(_googleData['photo_names'] as List)
+        : null;
+
+    final picked = await UnsplashPickerDialog.show(
+      context,
+      initialQuery: query.isEmpty ? 'restaurant food' : query,
+      googlePhotoNames: googlePhotoNames,
+      googlePlacesService: googlePhotoNames != null ? _googlePlacesService : null,
+    );
+    if (picked == null || !mounted) return;
+
+    if (picked.startsWith('gphoto:')) {
+      final photoName = picked.substring(7);
+      final uri = await _googlePlacesService.getPhotoUri(photoName);
+      if (uri != null && mounted) setState(() => _imageUrl = uri);
+    } else {
+      setState(() => _imageUrl = picked);
+    }
   }
 
   Future<void> _autoSuggestImage() async {
@@ -1658,18 +1675,159 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
   }
 
   Future<void> _pickCategoryImage(MenuCategory category) async {
+    final googlePhotoNames = _googleData['photo_names'] != null
+        ? List<String>.from(_googleData['photo_names'] as List)
+        : null;
+
     final picked = await UnsplashPickerDialog.show(
       context,
       initialQuery: 'food ${category.name}',
+      googlePhotoNames: googlePhotoNames,
+      googlePlacesService: googlePhotoNames != null ? _googlePlacesService : null,
     );
-    if (picked != null && mounted) {
-      try {
-        await _supabase.from('categories').update({'image_url': picked}).eq('id', category.id);
-        setState(() => category.imageUrl = picked);
-      } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.errorGeneral(e.toString()))));
+    if (picked == null || !mounted) return;
+
+    String? imageUrl;
+
+    if (picked.startsWith('gphoto:')) {
+      // Resolve the Google photo name to a CDN URI and save directly
+      final photoName = picked.substring(7);
+      imageUrl = await _googlePlacesService.getPhotoUri(photoName);
+      if (imageUrl == null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to resolve Google photo.')),
+        );
+        return;
       }
+    } else {
+      imageUrl = picked;
     }
+
+    try {
+      await _supabase.from('categories').update({'image_url': imageUrl}).eq('id', category.id);
+      if (mounted) setState(() => category.imageUrl = imageUrl);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.errorGeneral(e.toString()))));
+    }
+  }
+
+  /// Shows a dialog with the restaurant's Google Places photos.
+  /// Returns the selected photo name, or null if cancelled.
+  Future<String?> _showGooglePhotoPicker(List<String> photoNames) async {
+    // Pre-load all photo URIs
+    final uris = await Future.wait(
+      photoNames.map((n) => _googlePlacesService.getPhotoUri(n)),
+    );
+
+    if (!mounted) return null;
+
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        String? selected;
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return Dialog(
+              insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 680, maxHeight: 540),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 8, 16),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF7C3AED),
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                      ),
+                      child: Row(children: [
+                        const Icon(Icons.photo_library, color: Colors.white),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text('Pick a Google Photo',
+                              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ]),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: GridView.builder(
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8,
+                            childAspectRatio: 1.4,
+                          ),
+                          itemCount: photoNames.length,
+                          itemBuilder: (_, i) {
+                            final uri = uris[i];
+                            final isSelected = selected == photoNames[i];
+                            return GestureDetector(
+                              onTap: uri == null ? null : () => setDialogState(() => selected = photoNames[i]),
+                              child: Stack(fit: StackFit.expand, children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: uri == null
+                                      ? Container(color: Colors.grey[200], child: const Center(child: CircularProgressIndicator(strokeWidth: 2)))
+                                      : Image.network(uri, fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) => Container(color: Colors.grey[200], child: const Icon(Icons.broken_image))),
+                                ),
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 150),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: isSelected ? const Color(0xFF7C3AED) : Colors.transparent,
+                                      width: 3,
+                                    ),
+                                  ),
+                                ),
+                                if (isSelected)
+                                  Positioned(
+                                    top: 6, right: 6,
+                                    child: Container(
+                                      decoration: const BoxDecoration(color: Color(0xFF7C3AED), shape: BoxShape.circle),
+                                      padding: const EdgeInsets.all(3),
+                                      child: const Icon(Icons.check, color: Colors.white, size: 14),
+                                    ),
+                                  ),
+                              ]),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
+                      child: Row(children: [
+                        Text('Photos from Google Places', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                        const Spacer(),
+                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          onPressed: selected == null ? null : () => Navigator.pop(ctx, selected),
+                          icon: const Icon(Icons.check),
+                          label: const Text('Use this photo'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF7C3AED),
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ]),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   Widget _buildMenuTab() {
