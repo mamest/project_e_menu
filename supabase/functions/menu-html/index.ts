@@ -78,18 +78,17 @@ body, #loading, #content,
 .day (day name span), .hours (hours value span),
 .payment-tags (display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.5rem), .payment-tag (pill chip; cuisine accent background; color:white; padding:.3rem .8rem; border-radius:1rem; font-size:.85rem),
 .delivery-badge (display:inline-flex; align-items:center; gap:.4rem; background:green-ish; color:white; padding:.4rem 1rem; border-radius:1rem; margin-top:.75rem; font-size:.9rem),
-.menu-categories (padding:1.5rem 2rem),
-.category (margin-bottom:2.5rem),
-.category-name (h2; cuisine accent color; border-left or border-bottom accent; padding-left or padding-bottom; letter-spacing),
-.menu-item (display:flex; align-items:flex-start; padding:.6rem 0; border-bottom:1px solid #eee),
+.menu-categories (padding:1rem 2rem),
+.category (margin-bottom:1.5rem),
+.category-name (h2; cuisine accent color; border-left or border-bottom accent; padding-left or padding-bottom; letter-spacing; margin-bottom:.4rem),
+.menu-item (display:flex; align-items:flex-start; padding:.3rem 0; border-bottom:1px solid #eee),
 .item-main (flex:1; min-width:0),
-.item-number (font-size:.75rem; color:#999; font-style:italic; margin-right:.35rem),
-.item-name (font-weight:bold; font-size:1rem),
-.item-description (display:block; font-style:italic; font-size:.88rem; color:#666; margin-top:.2rem),
-.item-price (font-weight:bold; white-space:nowrap; padding-left:1.2rem; cuisine accent color; font-size:1rem),
-.item-variants (width:100%; padding-left:1.2rem; margin-top:.5rem),
-.variant (display:flex; justify-content:space-between; padding:.2rem 0; font-size:.93rem),
-.variant-name (font-style:italic; color:#555), .variant-price (font-weight:bold; cuisine accent color),
+.item-number (font-size:.72rem; color:#999; font-style:italic; margin-right:.3rem),
+.item-name (font-weight:bold; font-size:.95rem),
+.item-description (display:block; font-style:italic; font-size:.82rem; color:#666; margin-top:.1rem),
+.item-price (font-weight:bold; white-space:nowrap; padding-left:1rem; cuisine accent color; font-size:.95rem),
+.item-variants (white-space:normal; padding-left:.8rem; font-size:.8rem; font-style:italic; color:#555; text-align:right; flex-shrink:0; max-width:45%),
+.variant-name (color:#555), .variant-price (font-weight:bold; cuisine accent color), .variant-sep (color:#bbb),
 .menu-footer (text-align:center; color:#aaa; padding:2rem; font-size:.85rem; border-top:1px solid #eee),
 .menu-categories (padding:1.5rem 2rem),
 .categories-grid (display:grid; grid-template-columns:1fr 1fr; column-gap:2.5rem; row-gap:0; align-items:start; overflow:hidden),
@@ -268,19 +267,18 @@ function buildMenuHtml(
         items.sort(function(a, b) { return (a.display_order || 0) - (b.display_order || 0); });
         c += '<div class="category"><h2 class="category-name">' + esc(cat.name) + '</h2>';
         items.forEach(function(item) {
-          c += '<div class="menu-item"><div class="item-main"><div class="item-name">';
+          c += '<div class="menu-item" style="padding:.3rem 0"><div class="item-main" style="flex:1;min-width:0"><div class="item-name">';
           if (item.item_number) c += '<span class="item-number">' + esc(item.item_number) + '</span> ';
           c += esc(item.name) + '</div>';
           if (item.description) c += '<span class="item-description">' + esc(item.description) + '</span>';
           c += '</div>';
           if (item.has_variants && item.item_variants && item.item_variants.length) {
             var vs = item.item_variants.slice().sort(function(a,b){return(a.display_order||0)-(b.display_order||0);});
-            c += '<div class="item-variants">';
-            vs.forEach(function(v) {
+            var varParts = vs.map(function(v) {
               var vp = v.price != null ? '\u20ac' + parseFloat(v.price).toFixed(2) : t.priceOnRequest;
-              c += '<div class="variant"><span class="variant-name">' + esc(v.name) + '</span><span class="variant-price">' + vp + '</span></div>';
+              return '<span class="variant-name">' + esc(v.name) + '</span>\u202f<span class="variant-price">' + vp + '</span>';
             });
-            c += '</div>';
+            c += '<div class="item-variants">' + varParts.join('<span class="variant-sep"> &middot; </span>') + '</div>';
           } else if (item.price != null) {
             c += '<div class="item-price">\u20ac' + parseFloat(item.price).toFixed(2) + '</div>';
           } else {

@@ -546,17 +546,17 @@ class _MenuPageState extends State<MenuPage> {
     final Color color = _kCategoryColors[idx % _kCategoryColors.length];
     final availableItems = cat.items.where((i) => i.available).toList();
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-      elevation: 2,
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+      elevation: 1,
       clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           initiallyExpanded: idx == 0,
           tilePadding: EdgeInsets.zero,
-          iconColor: Colors.white,
-          collapsedIconColor: Colors.white,
+          iconColor: color,
+          collapsedIconColor: color,
           title: _buildCategoryHeader(cat, color, availableItems.length),
           children: availableItems.map((item) => _buildItemTile(item, color, cat.id)).toList(),
         ),
@@ -565,55 +565,32 @@ class _MenuPageState extends State<MenuPage> {
   }
 
   Widget _buildCategoryHeader(Category cat, Color color, int count) {
-    return SizedBox(
-      height: 90,
-      child: Stack(
-        fit: StackFit.expand,
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(left: BorderSide(color: color, width: 4)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
         children: [
-          if (cat.imageUrl != null)
-            Image.network(
-              cat.imageUrl!,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(color: color),
-            )
-          else
-            Container(color: color),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Colors.black.withOpacity(0.55)],
+          Expanded(
+            child: Text(
+              cat.name,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: color,
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 52, 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text(
-                  cat.name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    shadows: [Shadow(blurRadius: 4, color: Colors.black38)],
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.25),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white.withOpacity(0.5), width: 0.5),
-                  ),
-                  child: Text(AppLocalizations.of(context)!.itemCount(count),
-                      style: const TextStyle(color: Colors.white, fontSize: 11)),
-                ),
-              ],
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              AppLocalizations.of(context)!.itemCount(count),
+              style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600),
             ),
           ),
         ],

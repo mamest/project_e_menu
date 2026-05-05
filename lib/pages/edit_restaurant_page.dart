@@ -230,8 +230,17 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
       // Build payload from current local state
       final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
       final anonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+      // Derive the app's public base URL (production domain takes priority over localhost)
+      final configuredBase = dotenv.env['APP_BASE_URL']?.trim() ?? '';
+      final appBaseUrl = configuredBase.isNotEmpty
+          ? configuredBase.replaceAll(RegExp(r'/$'), '')
+          : () {
+              final origin = html.window.location.origin;
+              return (origin.isNotEmpty && origin != 'null') ? origin : '';
+            }();
       final payload = {
         'restaurantId': widget.restaurant.id,
+        'appBaseUrl': appBaseUrl,
         'restaurant': {
           'name': _nameController.text,
           'address': _addressController.text,
