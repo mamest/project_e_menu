@@ -795,19 +795,6 @@ class _AdminUploadPageState extends State<AdminUploadPage> {
     descController.dispose();
   }
 
-  /// Returns the stable base URL for QR codes (mirrors restaurant_list_page.dart).
-  String get _appBaseUrl {
-    final configured = dotenv.env['APP_BASE_URL'];
-    if (configured != null && configured.trim().isNotEmpty) {
-      return configured.trim().replaceAll(RegExp(r'/$'), '');
-    }
-    try {
-      return Uri.base.origin;
-    } catch (_) {
-      return '';
-    }
-  }
-
   Widget _buildCategoryCard(int catIndex, CategoryData category) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
