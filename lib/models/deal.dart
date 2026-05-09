@@ -48,7 +48,7 @@ class Deal {
       validUntil: json['valid_until'] != null
           ? DateTime.parse(json['valid_until'] as String)
           : null,
-      active: json['active'] as bool? ?? true,
+      active: json['active'] != false,
       categoryIds:
           catRaw?.map((e) => e['category_id'] as int).toList() ?? [],
       itemIds: itemRaw?.map((e) => e['item_id'] as int).toList() ?? [],

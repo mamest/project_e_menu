@@ -168,7 +168,7 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
           supabaseUrl.isNotEmpty &&
           supabaseKey.isNotEmpty) {
         var query = Supabase.instance.client.from('restaurants').select(
-            'id, name, address, email, phone, description, image_url, cuisine_type, delivers, opening_hours, payment_methods, latitude, longitude, restaurant_owner_uuid, menu_html_url, menu_updated_at, updated_at, translations, google_place_id, google_data');
+            'id, name, address, email, phone, description, image_url, cuisine_type, delivers, opening_hours, payment_methods, latitude, longitude, restaurant_owner_uuid, menu_html_url, menu_updated_at, updated_at, translations, google_place_id, google_data, is_verified, verification_method');
 
         // Apply server-side location filtering with bounding box
         if (latitude != null && longitude != null && radiusKm != null) {
@@ -1780,16 +1780,29 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
     return Row(
       children: [
         Expanded(
-          child: Text(
-            restaurant.name,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              foreground: Paint()
-                ..shader = LinearGradient(
-                  colors: [Colors.deepPurple.shade700, Colors.purple.shade400],
-                ).createShader(const Rect.fromLTWH(0.0, 0.0, 200.0, 70.0)),
-            ),
+          child: Row(
+            children: [
+              Flexible(
+                child: Text(
+                  restaurant.name,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    foreground: Paint()
+                      ..shader = LinearGradient(
+                        colors: [Colors.deepPurple.shade700, Colors.purple.shade400],
+                      ).createShader(const Rect.fromLTWH(0.0, 0.0, 200.0, 70.0)),
+                  ),
+                ),
+              ),
+              if (restaurant.isVerified == true) ...[  
+                const SizedBox(width: 6),
+                Tooltip(
+                  message: 'Verified – managed by the owner',
+                  child: const Icon(Icons.verified, size: 18, color: Color(0xFF7C3AED)),
+                ),
+              ],
+            ],
           ),
         ),
         if (hasItems) _buildCartBadge(restaurantCart),
@@ -1881,6 +1894,10 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
       child: Column(
         children: [
           _buildAddressRow(restaurant),
+          if (restaurant.googleData['rating'] != null) ...[  
+            const SizedBox(height: 6),
+            _buildGoogleRatingRow(restaurant),
+          ],
           if (restaurant.phone != null) ...[
             const SizedBox(height: 4),
             _buildPhoneRow(restaurant),
@@ -1897,6 +1914,31 @@ class _RestaurantListPageState extends State<RestaurantListPage> {
 
         ],
       ),
+    );
+  }
+
+  Widget _buildGoogleRatingRow(Restaurant restaurant) {
+    final rating = (restaurant.googleData['rating'] as num).toDouble();
+    final count = restaurant.googleData['user_rating_count'] as int?;
+    return Row(
+      children: [
+        const Text('G', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF4285F4))),
+        const SizedBox(width: 4),
+        ...List.generate(5, (i) {
+          if (rating >= i + 1) return const Icon(Icons.star, color: Colors.amber, size: 13);
+          if (rating >= i + 0.5) return const Icon(Icons.star_half, color: Colors.amber, size: 13);
+          return const Icon(Icons.star_border, color: Colors.amber, size: 13);
+        }),
+        const SizedBox(width: 4),
+        Text(
+          rating.toStringAsFixed(1),
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+        ),
+        if (count != null) ...[  
+          const SizedBox(width: 3),
+          Text('($count)', style: const TextStyle(fontSize: 11, color: Colors.black54)),
+        ],
+      ],
     );
   }
 

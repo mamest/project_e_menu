@@ -74,6 +74,15 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
   String? _savedMenuHtmlUrl;
   String? _errorMessage;
 
+  // Verification
+  bool _isVerified = false;
+  String? _verificationMethod;
+  bool _verificationLoading = false;
+  String? _verificationError;
+  String? _verificationSuccess;
+  final TextEditingController _pinController = TextEditingController();
+  bool _pinSent = false;
+
   // Google Places
   final GooglePlacesService _googlePlacesService = GooglePlacesService();
   String? _googlePlaceId;
@@ -107,6 +116,8 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
     _savedMenuHtmlUrl = widget.restaurant.menuHtmlUrl;
     _googlePlaceId = widget.restaurant.googlePlaceId;
     _googleData = Map<String, dynamic>.from(widget.restaurant.googleData);
+    _isVerified = widget.restaurant.isVerified == true;
+    _verificationMethod = widget.restaurant.verificationMethod;
     _loadMenuData();
   }
 
@@ -120,6 +131,7 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
     _cuisineTypeController.dispose();
     for (final c in _hoursControllers.values) c.dispose();
     _googleSearchController.dispose();
+    _pinController.dispose();
     super.dispose();
   }
 
@@ -369,13 +381,50 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
   Future<void> _saveRestaurantInfo() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Warn the owner before revoking phone-based verification
+    final phoneChanged = _phoneController.text.trim() != (widget.restaurant.phone ?? '').trim();
+    final revokeVerification = phoneChanged && _isVerified && _verificationMethod == 'phone_pin';
+    if (revokeVerification) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange),
+              SizedBox(width: 8),
+              Text('Lose Verification?'),
+            ],
+          ),
+          content: const Text(
+            'You are changing your restaurant\'s phone number.\n\n'
+            'Because your verification was confirmed via that number, '
+            'changing it will remove your verified badge. '
+            'You will need to re-verify with the new number afterwards.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              child: const Text('Change anyway', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+      if (confirm != true) return;
+    }
+
     setState(() {
       _isSaving = true;
       _errorMessage = null;
     });
 
     try {
-      await _supabase.from('restaurants').update({
+
+      final updateData = <String, dynamic>{
         'name': _nameController.text,
         'address': _addressController.text,
         'phone': _phoneController.text.isEmpty ? null : _phoneController.text,
@@ -386,7 +435,24 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
         'image_url': _imageUrl,
         'opening_hours': _openingHours.isEmpty ? null : Map<String, dynamic>.from(_openingHours),
         'payment_methods': _paymentMethods.isEmpty ? null : _paymentMethods,
-      }).eq('id', widget.restaurant.id);
+        if (revokeVerification) ...{
+          'is_verified': false,
+          'verification_method': null,
+          'verified_at': null,
+        },
+      };
+
+      await _supabase.from('restaurants').update(updateData).eq('id', widget.restaurant.id);
+
+      if (revokeVerification) {
+        setState(() {
+          _isVerified = false;
+          _verificationMethod = null;
+          _pinSent = false;
+          _verificationSuccess = null;
+          _verificationError = 'Phone number changed — please re-verify with the new number.';
+        });
+      }
 
       // Fire-and-forget: translate the restaurant description if it changed
       final desc = _descriptionController.text.isEmpty ? null : _descriptionController.text;
@@ -471,20 +537,9 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
           ));
         });
 
-        // Auto-suggest a category image in the background
+        // Translate category name in the background (fire-and-forget)
         final catName = nameController.text;
         final newCatId = response['id'] as int;
-        UnsplashService.getCategoryImage(catName).then((url) {
-          if (url != null && mounted) {
-            _supabase.from('categories').update({'image_url': url}).eq('id', newCatId);
-            setState(() {
-              final idx = _categories.indexWhere((c) => c.id == newCatId);
-              if (idx >= 0) _categories[idx].imageUrl = url;
-            });
-          }
-        });
-
-        // Translate category name in the background (fire-and-forget)
         _translationService
             .translateCategoryIfChanged(name: catName)
             .then((t) {
@@ -1216,6 +1271,8 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
             _buildEditImageSection(),
             const SizedBox(height: 16),
             _buildGooglePlacesSection(),
+            const SizedBox(height: 16),
+            _buildVerificationSection(),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: _isSaving ? null : _saveRestaurantInfo,
@@ -1392,6 +1449,239 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
     } finally {
       setState(() => _googleFetching = false);
     }
+  }
+
+  // ── Verification ─────────────────────────────────────────────────────────
+
+  /// Generates a 6-digit PIN, stores it in verification_requests, and
+  /// (for now) shows it in a snackbar so the owner can confirm it matches
+  /// the number they receive. In production, hook this to an SMS provider.
+  Future<void> _requestPhonePin() async {
+    final phone = _phoneController.text.trim();
+    if (phone.isEmpty) {
+      setState(() => _verificationError = 'Please enter a phone number first.');
+      return;
+    }
+    setState(() {
+      _verificationLoading = true;
+      _verificationError = null;
+      _verificationSuccess = null;
+    });
+    try {
+      // Generate a random 6-digit PIN
+      final pin = (100000 + (DateTime.now().millisecondsSinceEpoch % 900000))
+          .toString();
+      final userId = _supabase.auth.currentUser!.id;
+      await _supabase.from('verification_requests').insert({
+        'restaurant_id': widget.restaurant.id,
+        'owner_uuid': userId,
+        'phone': phone,
+        'pin': pin,
+        'method': 'phone_pin',
+      });
+      setState(() => _pinSent = true);
+      // TODO: integrate SMS provider (e.g. Twilio, Vonage) to send PIN to $phone
+      // For now, the PIN is shown here for testing — remove before production!
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('DEV: PIN is $pin — replace with real SMS in production'),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 10),
+        ));
+      }
+    } catch (e) {
+      setState(() => _verificationError = e.toString());
+    } finally {
+      setState(() => _verificationLoading = false);
+    }
+  }
+
+  Future<void> _submitPin() async {
+    final entered = _pinController.text.trim();
+    if (entered.length != 6) {
+      setState(() => _verificationError = 'Please enter the 6-digit PIN.');
+      return;
+    }
+    setState(() {
+      _verificationLoading = true;
+      _verificationError = null;
+    });
+    try {
+      final userId = _supabase.auth.currentUser!.id;
+      // Look up the most recent, unused, non-expired request
+      final rows = await _supabase
+          .from('verification_requests')
+          .select()
+          .eq('restaurant_id', widget.restaurant.id)
+          .eq('owner_uuid', userId)
+          .eq('used', false)
+          .gt('expires_at', DateTime.now().toUtc().toIso8601String())
+          .order('created_at', ascending: false)
+          .limit(1);
+
+      if (rows.isEmpty) {
+        setState(() => _verificationError =
+            'PIN expired or not found. Please request a new one.');
+        return;
+      }
+
+      final request = rows.first as Map<String, dynamic>;
+      if (request['pin'] != entered) {
+        setState(() => _verificationError = 'Incorrect PIN. Please try again.');
+        return;
+      }
+
+      // Mark request used
+      await _supabase
+          .from('verification_requests')
+          .update({'used': true}).eq('id', request['id']);
+
+      // Mark restaurant verified
+      await _supabase.from('restaurants').update({
+        'is_verified': true,
+        'verification_method': 'phone_pin',
+        'verified_at': DateTime.now().toIso8601String(),
+      }).eq('id', widget.restaurant.id);
+
+      setState(() {
+        _isVerified = true;
+        _verificationMethod = 'phone_pin';
+        _pinSent = false;
+        _pinController.clear();
+        _verificationSuccess = 'Your restaurant is now verified!';
+      });
+    } catch (e) {
+      setState(() => _verificationError = e.toString());
+    } finally {
+      setState(() => _verificationLoading = false);
+    }
+  }
+
+  Widget _buildVerificationSection() {
+    return Card(
+      margin: const EdgeInsets.only(top: 4),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  _isVerified ? Icons.verified : Icons.verified_outlined,
+                  color: _isVerified ? const Color(0xFF7C3AED) : Colors.grey,
+                  size: 22,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _isVerified ? 'Verified Restaurant' : 'Verify Your Restaurant',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                if (_isVerified) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7C3AED).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      _verificationMethod == 'phone_pin' ? 'via Phone' : _verificationMethod ?? '',
+                      style: const TextStyle(fontSize: 11, color: Color(0xFF5B21B6), fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _isVerified
+                  ? 'Your restaurant shows a verified badge to customers, '
+                    'confirming you are the legitimate owner.'
+                  : 'Verify ownership to display a verified badge on your listing. '
+                    'We send a PIN to your restaurant\'s phone number.',
+              style: const TextStyle(fontSize: 13, color: Colors.black54),
+            ),
+
+            if (_verificationError != null) ...[
+              const SizedBox(height: 8),
+              Text(_verificationError!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+            ],
+            if (_verificationSuccess != null) ...[
+              const SizedBox(height: 8),
+              Text(_verificationSuccess!, style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
+            ],
+
+            if (!_isVerified) ...[
+              const SizedBox(height: 12),
+              if (!_pinSent) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _phoneController.text.isEmpty
+                            ? 'Add a phone number above first.'
+                            : 'Send a PIN to: ${_phoneController.text.trim()}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: _phoneController.text.isEmpty ? Colors.orange : Colors.black87,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: (_verificationLoading || _phoneController.text.isEmpty)
+                          ? null
+                          : _requestPhonePin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF7C3AED),
+                        foregroundColor: Colors.white,
+                      ),
+                      child: _verificationLoading
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Text('Send PIN'),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _pinController,
+                        keyboardType: TextInputType.number,
+                        maxLength: 6,
+                        decoration: const InputDecoration(
+                          labelText: 'Enter 6-digit PIN',
+                          border: OutlineInputBorder(),
+                          counterText: '',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: _verificationLoading ? null : _submitPin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF7C3AED),
+                        foregroundColor: Colors.white,
+                      ),
+                      child: _verificationLoading
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Text('Confirm'),
+                    ),
+                  ],
+                ),
+                TextButton(
+                  onPressed: _verificationLoading ? null : () => setState(() { _pinSent = false; _verificationError = null; }),
+                  child: const Text('Resend / change number'),
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildGooglePlacesSection() {
@@ -1674,43 +1964,6 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
     );
   }
 
-  Future<void> _pickCategoryImage(MenuCategory category) async {
-    final googlePhotoNames = _googleData['photo_names'] != null
-        ? List<String>.from(_googleData['photo_names'] as List)
-        : null;
-
-    final picked = await UnsplashPickerDialog.show(
-      context,
-      initialQuery: 'food ${category.name}',
-      googlePhotoNames: googlePhotoNames,
-      googlePlacesService: googlePhotoNames != null ? _googlePlacesService : null,
-    );
-    if (picked == null || !mounted) return;
-
-    String? imageUrl;
-
-    if (picked.startsWith('gphoto:')) {
-      // Resolve the Google photo name to a CDN URI and save directly
-      final photoName = picked.substring(7);
-      imageUrl = await _googlePlacesService.getPhotoUri(photoName);
-      if (imageUrl == null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to resolve Google photo.')),
-        );
-        return;
-      }
-    } else {
-      imageUrl = picked;
-    }
-
-    try {
-      await _supabase.from('categories').update({'image_url': imageUrl}).eq('id', category.id);
-      if (mounted) setState(() => category.imageUrl = imageUrl);
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.errorGeneral(e.toString()))));
-    }
-  }
-
   Widget _buildMenuTab() {
     final l10n = AppLocalizations.of(context)!;
     return Column(
@@ -1742,43 +1995,17 @@ class _EditRestaurantPageState extends State<EditRestaurantPage> {
                     return Card(
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       child: ExpansionTile(
-                        title: Row(
-                          children: [
-                            // Category image thumbnail
-                            if (category.imageUrl != null && category.imageUrl!.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(right: 10),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: Image.network(
-                                    category.imageUrl!,
-                                    width: 40,
-                                    height: 28,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => const SizedBox(),
-                                  ),
-                                ),
-                              ),
-                            Expanded(
-                              child: Text(
-                                category.name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                ),
-                              ),
-                            ),
-                          ],
+                        title: Text(
+                          category.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
                         ),
                         subtitle: Text(l10n.itemCount(category.items.length)),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            IconButton(
-                              icon: const Icon(Icons.image_search, color: const Color(0xFF7C3AED)),
-                              onPressed: () => _pickCategoryImage(category),
-                              tooltip: 'Change category photo',
-                            ),
                             IconButton(
                               icon: const Icon(Icons.add, color: const Color(0xFF7C3AED)),
                               onPressed: () => _addItem(category),

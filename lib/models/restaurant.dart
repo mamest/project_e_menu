@@ -21,6 +21,8 @@ class Restaurant {
   final DateTime? updatedAt;
   final String? googlePlaceId;
   final Map<String, dynamic> googleData;
+  final bool? isVerified;
+  final String? verificationMethod;
 
   Restaurant({
     required this.id,
@@ -43,6 +45,8 @@ class Restaurant {
     this.updatedAt,
     this.googlePlaceId,
     this.googleData = const {},
+    this.isVerified = false,
+    this.verificationMethod,
   });
 
   factory Restaurant.fromJson(Map<String, dynamic> json) {
@@ -55,7 +59,7 @@ class Restaurant {
       description: json['description'] as String?,
       imageUrl: json['image_url'] as String?,
       cuisineType: json['cuisine_type'] as String?,
-      delivers: json['delivers'] as bool? ?? false,
+      delivers: json['delivers'] == true,
       openingHours: json['opening_hours'] as Map<String, dynamic>?,
       paymentMethods: json['payment_methods'] != null
           ? List<String>.from(json['payment_methods'] as List)
@@ -81,6 +85,8 @@ class Restaurant {
           : null,
       googlePlaceId: json['google_place_id'] as String?,
       googleData: (json['google_data'] as Map?)?.cast<String, dynamic>() ?? {},
+      isVerified: json['is_verified'] == true,
+      verificationMethod: json['verification_method'] as String?,
     );
   }
 

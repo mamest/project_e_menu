@@ -12,7 +12,6 @@ import '../models/deal.dart';
 import '../models/menu_item.dart';
 import '../models/restaurant.dart';
 import '../services/html_menu_service.dart';
-import '../services/unsplash_service.dart';
 import '../services/google_places_service.dart';
 
 class MenuPage extends StatefulWidget {
@@ -175,7 +174,6 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
           loading = false;
           _tabController = ctrl;
         });
-        _loadCategoryImages();
       }
     } catch (e) {
       setState(() {
@@ -196,20 +194,6 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
     Color(0xFF5B21B6), // dark violet
     Color(0xFF6366F1), // indigo-blue
   ];
-
-  Future<void> _loadCategoryImages() async {
-    // Only fetch from Unsplash for categories that have no image_url from the DB
-    final needsImage = categories.where((c) => c.imageUrl == null || c.imageUrl!.isEmpty).toList();
-    if (needsImage.isEmpty) return;
-    final updated = await Future.wait(
-      categories.map((cat) async {
-        if (cat.imageUrl != null && cat.imageUrl!.isNotEmpty) return cat;
-        final img = await UnsplashService.getCategoryImage(cat.name);
-        return cat.copyWith(imageUrl: img);
-      }),
-    );
-    if (mounted) setState(() => categories = updated);
-  }
 
   /// Returns the first active deal that applies to [itemId] in [categoryId],
   /// or null if no deal applies today.
@@ -555,61 +539,12 @@ class _MenuPageState extends State<MenuPage> with TickerProviderStateMixin {
     if (availableItems.isEmpty) {
       return const Center(child: Text('No items available'));
     }
-    final locale = Localizations.localeOf(context).languageCode;
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 8),
-      itemCount: availableItems.length + 1,
+      itemCount: availableItems.length,
       itemBuilder: (context, i) {
-        if (i == 0) {
-          return _buildCategoryImageHeader(cat, color, locale);
-        }
-        return _buildItemTile(availableItems[i - 1], color, cat.id);
+        return _buildItemTile(availableItems[i], color, cat.id);
       },
-    );
-  }
-
-  Widget _buildCategoryImageHeader(Category cat, Color color, String locale) {
-    if (cat.imageUrl == null || cat.imageUrl!.isEmpty) return const SizedBox.shrink();
-    return Stack(
-      children: [
-        Container(
-          height: 160,
-          width: double.infinity,
-          color: color.withOpacity(0.12),
-          child: Image.network(
-            cat.imageUrl!,
-            fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-          ),
-        ),
-        Positioned.fill(
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  color.withOpacity(0.75),
-                ],
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 16,
-          bottom: 12,
-          child: Text(
-            cat.localizedName(locale),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              shadows: [Shadow(blurRadius: 4, color: Colors.black45)],
-            ),
-          ),
-        ),
-      ],
     );
   }
 

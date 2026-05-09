@@ -60,8 +60,8 @@ class MenuItem {
       itemNumber: json['item_number'] as String?,
       price: json['price'] != null ? (json['price'] as num).toDouble() : null,
       description: json['description'] as String?,
-      available: json['available'] as bool? ?? true,
-      hasVariants: json['has_variants'] as bool? ?? false,
+      available: json['available'] != false,
+      hasVariants: json['has_variants'] == true,
       variants: variants,
       translations: (json['translations'] as Map?)?.cast<String, dynamic>() ?? {},
     );
